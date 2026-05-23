@@ -2,26 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+    /* Locked Vigilance tokens (ARCHITECTURE.md §9) */
+    --bg-primary: #0A0E1A;
+    --bg-secondary: #1C2333;
+    --bg-tertiary: #161B2A;
+    --accent-primary: #D4AF37;
+    --accent-soft: rgba(212, 175, 55, 0.12);
+    --text-primary: #F5F5F0;
+    --text-secondary: #8B92A5;
+    --text-muted: #5A5F70;
+    --positive: #6FA76F;
+    --negative: #C8553D;
+    --hint-pay-attention: #C8553D;
+    --hint-opportunity: #D4AF37;
+    --hint-strategic: #6FA76F;
+    --crypto-accent: #FBBF24;
+    --invest-accent: #A78BFA;
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+    /* shadcn/ui HSL shim — mapped onto the locked palette above.
+       Triplet form (no hsl()) so Tailwind's hsl(var(--token) / <alpha-value>) works. */
+    --background: 225 44% 7%;
+    --foreground: 60 22% 95%;
+    --card: 225 29% 15%;
+    --card-foreground: 60 22% 95%;
+    --popover: 225 29% 15%;
+    --popover-foreground: 60 22% 95%;
+    --primary: 46 65% 52%;
+    --primary-foreground: 225 44% 7%;
+    --secondary: 225 33% 13%;
+    --secondary-foreground: 60 22% 95%;
+    --muted: 225 33% 13%;
+    --muted-foreground: 221 13% 60%;
+    --accent: 225 33% 13%;
+    --accent-foreground: 60 22% 95%;
+    --destructive: 10 56% 51%;
+    --destructive-foreground: 60 22% 95%;
+    --border: 225 20% 22%;
+    --input: 225 20% 22%;
+    --ring: 46 65% 52%;
+    --radius: 0.625rem;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-feature-settings: "tnum" 0;
+  }
+
+  ::selection {
+    background: rgba(212, 175, 55, 0.35);
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .font-ledger {
+    font-family: Georgia, serif;
+    font-variant-numeric: tabular-nums;
   }
 }
