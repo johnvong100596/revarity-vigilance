@@ -13,8 +13,15 @@ CREATE TABLE public.fx_rates (
   CONSTRAINT fx_rates_rate_positive CHECK (rate > 0)
 );
 
+-- DATE(timestamptz) is STABLE (session-tz dependent), so Postgres rejects it
+-- in an index expression. (captured_at AT TIME ZONE 'UTC')::date is IMMUTABLE
+-- because the timezone is fixed — same semantic, accepted by the planner.
 CREATE UNIQUE INDEX fx_rates_pair_day_unique
-  ON public.fx_rates(base_currency, target_currency, (DATE(captured_at)));
+  ON public.fx_rates(
+    base_currency,
+    target_currency,
+    ((captured_at AT TIME ZONE 'UTC')::date)
+  );
 
 CREATE INDEX idx_fx_rates_latest
   ON public.fx_rates(base_currency, target_currency, captured_at DESC);
