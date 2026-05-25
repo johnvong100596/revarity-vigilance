@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/app";
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

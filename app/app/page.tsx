@@ -90,14 +90,14 @@ export default async function HomePage() {
     <>
       <header className="mb-6 flex items-center justify-between">
         <Link
-          href="/settings"
+          href="/app/settings"
           aria-label="Settings"
           className="text-text-secondary transition hover:text-text-primary"
         >
           <Menu className="h-5 w-5" />
         </Link>
         <Link
-          href="/hints"
+          href="/app/hints"
           aria-label="Hints"
           className="relative text-accent-primary transition hover:opacity-80"
         >
@@ -139,7 +139,7 @@ export default async function HomePage() {
       {hasAccounts ? (
         <>
           <Link
-            href="/checkin"
+            href="/app/checkin"
             className="mb-4 flex items-center justify-between rounded-hero border border-accent-primary/40 bg-bg-secondary p-3.5 transition hover:bg-bg-tertiary"
           >
             <div>
@@ -159,7 +159,7 @@ export default async function HomePage() {
 
           {topHint && (
             <Link
-              href="/hints"
+              href="/app/hints"
               className={`mb-5 block rounded-card border ${HINT_COLOR_BORDER[topHint.category]} bg-accent-soft p-3 transition hover:bg-accent-primary/15`}
             >
               <div className="mb-1.5 flex items-center justify-between">
@@ -202,7 +202,7 @@ export default async function HomePage() {
           </ul>
 
           <Link
-            href="/accounts/add"
+            href="/app/accounts/add"
             className="mb-6 flex items-center justify-center gap-1.5 rounded-row border border-dashed border-white/10 px-3 py-2 text-xs text-text-secondary transition hover:border-accent-primary/40 hover:text-accent-primary"
           >
             <Plus className="h-3.5 w-3.5" /> Add account
@@ -210,7 +210,7 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-2 gap-2">
             <Link
-              href="/reckoning"
+              href="/app/reckoning"
               className="rounded-row bg-bg-secondary p-3 text-center transition hover:bg-bg-tertiary"
             >
               <div className="text-[10px] tracking-[0.15em] text-accent-primary">
@@ -219,7 +219,7 @@ export default async function HomePage() {
               <div className="mt-1 text-xs text-text-secondary">Reckoning</div>
             </Link>
             <Link
-              href="/close"
+              href="/app/close"
               className="rounded-row bg-bg-secondary p-3 text-center transition hover:bg-bg-tertiary"
             >
               <div className="text-[10px] tracking-[0.15em] text-accent-primary">
@@ -239,7 +239,7 @@ export default async function HomePage() {
             starts with knowing what you have.
           </p>
           <Link
-            href="/accounts/add"
+            href="/app/accounts/add"
             className="inline-flex items-center gap-2 rounded-hero border border-accent-primary bg-accent-soft px-5 py-3 text-sm font-medium text-accent-primary transition hover:bg-accent-primary hover:text-bg-primary"
           >
             <Plus className="h-4 w-4" /> Add your first account

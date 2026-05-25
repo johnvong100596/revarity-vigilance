@@ -68,7 +68,7 @@ async function addAccountAction(formData: FormData) {
 
   if (error) throw new Error(`Could not create account: ${error.message}`);
 
-  redirect("/");
+  redirect("/app");
 }
 
 export default async function AddAccountPage() {
@@ -90,7 +90,7 @@ export default async function AddAccountPage() {
     <>
       <header className="mb-6 flex items-center justify-between">
         <Link
-          href="/"
+          href="/app"
           aria-label="Back"
           className="text-text-secondary transition hover:text-text-primary"
         >
