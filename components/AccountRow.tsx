@@ -24,32 +24,34 @@ export function AccountRow({ account, position }: AccountRowProps) {
 
   return (
     <Link
-      href={`/accounts/${account.id}`}
+      href={`/app/accounts/${account.id}`}
       className={cn(
-        "relative flex items-center justify-between bg-bg-secondary px-3.5 py-3 transition hover:bg-bg-tertiary",
+        "relative flex items-center justify-between bg-bg-tertiary px-4 py-3.5 transition hover:bg-bg-secondary",
         position === "first" && "rounded-t-card",
         position === "last" && "rounded-b-card",
         position === "only" && "rounded-card",
-        position !== "first" && position !== "only" && "border-t border-white/[0.04]"
+        position !== "first" &&
+          position !== "only" &&
+          "border-t border-text-primary/6"
       )}
     >
       <span
         className={cn(
-          "absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r",
+          "absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full",
           EDGE_COLOR[account.account_type]
         )}
         aria-hidden
       />
-      <div className="pl-2.5">
-        <div className="text-xs text-text-primary">{account.name}</div>
+      <div className="pl-3">
+        <div className="text-sm font-medium text-text-primary">{account.name}</div>
         {account.subtitle && (
-          <div className="text-[10px] text-text-secondary">{account.subtitle}</div>
+          <div className="text-xs text-text-secondary">{account.subtitle}</div>
         )}
       </div>
       <div className="text-right">
         <div
           className={cn(
-            "text-[13px] font-medium tabular-nums",
+            "text-[15px] font-semibold tabular-nums tracking-[-0.01em]",
             isDebt ? "text-negative" : "text-text-primary"
           )}
         >

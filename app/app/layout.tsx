@@ -15,7 +15,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[420px] px-5 pb-12 pt-6">
+    <div className="mx-auto min-h-screen w-full max-w-[440px] bg-bg-primary px-5 pb-12 pt-6 md:pt-10">
       {children}
     </div>
   );

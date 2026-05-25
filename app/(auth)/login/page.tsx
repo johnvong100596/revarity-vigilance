@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -47,22 +48,28 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-10">
+    <div className="w-full max-w-[400px] space-y-10">
       <header className="space-y-3 text-center">
-        <div className="text-[10px] tracking-[0.25em] text-accent-primary">
-          VIGILANCE
-        </div>
-        <h1 className="font-ledger text-3xl text-text-primary">
-          Daily check-in
+        <Link
+          href="/"
+          className="inline-block text-xl font-semibold tracking-tight text-text-primary"
+        >
+          Vigilance
+        </Link>
+        <h1 className="text-3xl font-bold tracking-[-0.025em] text-text-primary">
+          Welcome
         </h1>
         <p className="text-sm text-text-secondary">
-          Your money in front of you, every day.
+          We&apos;ll email you a magic link. No password needed.
         </p>
       </header>
 
       <form onSubmit={sendMagicLink} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-text-secondary">
+          <Label
+            htmlFor="email"
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
+          >
             Email
           </Label>
           <Input
@@ -77,13 +84,14 @@ function LoginForm() {
         </div>
         <Button
           type="submit"
+          size="lg"
           disabled={status === "sending" || !email}
           className="w-full"
         >
           {status === "sending" ? "Sending…" : "Send magic link"}
         </Button>
         {status === "sent" && (
-          <p className="text-center text-sm text-text-secondary">
+          <p className="text-center text-sm text-positive">
             Check {email} for the link.
           </p>
         )}
@@ -91,10 +99,12 @@ function LoginForm() {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-white/10" />
+          <span className="w-full border-t border-text-primary/10" />
         </div>
-        <div className="relative flex justify-center text-[10px] uppercase tracking-[0.2em]">
-          <span className="bg-bg-primary px-3 text-text-muted">or</span>
+        <div className="relative flex justify-center">
+          <span className="bg-bg-primary px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+            or
+          </span>
         </div>
       </div>
 
@@ -102,6 +112,7 @@ function LoginForm() {
         type="button"
         onClick={signInWithGoogle}
         variant="outline"
+        size="lg"
         className="w-full"
       >
         Continue with Google
@@ -116,7 +127,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-bg-primary px-6 py-12">
       <Suspense fallback={<div className="text-sm text-text-secondary">Loading…</div>}>
         <LoginForm />
       </Suspense>

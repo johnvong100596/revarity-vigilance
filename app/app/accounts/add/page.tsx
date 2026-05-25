@@ -88,21 +88,21 @@ export default async function AddAccountPage() {
 
   return (
     <>
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-8 flex items-center justify-between">
         <Link
           href="/app"
           aria-label="Back"
-          className="text-text-secondary transition hover:text-text-primary"
+          className="-m-2 p-2 text-text-secondary transition hover:text-text-primary"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div className="text-[10px] tracking-[0.2em] text-text-secondary">
-          NEW ACCOUNT
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          New account
         </div>
-        <div className="w-5" />
+        <div className="w-9" />
       </header>
 
-      <h1 className="mb-8 font-ledger text-2xl text-text-primary">
+      <h1 className="mb-8 text-3xl font-bold tracking-[-0.025em] text-text-primary">
         Add account
       </h1>
 
@@ -110,16 +110,16 @@ export default async function AddAccountPage() {
         <div className="space-y-2">
           <Label
             htmlFor="account_type"
-            className="text-[10px] tracking-[0.15em] text-text-secondary"
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
           >
-            TYPE
+            Type
           </Label>
           <select
             name="account_type"
             id="account_type"
             defaultValue="bank"
             required
-            className="flex h-10 w-full rounded-md border border-input bg-bg-secondary px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-tertiary px-3.5 py-2 text-sm text-text-primary focus-visible:border-accent-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/15"
           >
             {ACCOUNT_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -132,9 +132,9 @@ export default async function AddAccountPage() {
         <div className="space-y-2">
           <Label
             htmlFor="name"
-            className="text-[10px] tracking-[0.15em] text-text-secondary"
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
           >
-            NAME
+            Name
           </Label>
           <Input
             id="name"
@@ -148,9 +148,9 @@ export default async function AddAccountPage() {
         <div className="space-y-2">
           <Label
             htmlFor="subtitle"
-            className="text-[10px] tracking-[0.15em] text-text-secondary"
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
           >
-            SUBTITLE
+            Subtitle
           </Label>
           <Input
             id="subtitle"
@@ -164,9 +164,9 @@ export default async function AddAccountPage() {
           <div className="col-span-2 space-y-2">
             <Label
               htmlFor="balance"
-              className="text-[10px] tracking-[0.15em] text-text-secondary"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
             >
-              BALANCE
+              Balance
             </Label>
             <Input
               id="balance"
@@ -181,16 +181,16 @@ export default async function AddAccountPage() {
           <div className="space-y-2">
             <Label
               htmlFor="currency"
-              className="text-[10px] tracking-[0.15em] text-text-secondary"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
             >
-              CURRENCY
+              Currency
             </Label>
             <select
               name="currency"
               id="currency"
               defaultValue={defaultCurrency}
               required
-              className="flex h-10 w-full rounded-md border border-input bg-bg-secondary px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-tertiary px-3.5 py-2 text-sm text-text-primary focus-visible:border-accent-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/15"
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
@@ -201,14 +201,14 @@ export default async function AddAccountPage() {
           </div>
         </div>
 
-        <p className="text-[11px] leading-relaxed text-text-muted">
+        <p className="text-xs leading-relaxed text-text-muted">
           For debt accounts (loans, credit cards), enter the balance owed as a
-          positive number. Net worth math handles the sign. Detailed fields like
-          APR, statement close day, and credit limit are added in account
+          positive number. Net worth math handles the sign. Detailed fields
+          like APR, statement close day, and credit limit are added in account
           settings.
         </p>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" size="lg" className="w-full">
           Add account
         </Button>
       </form>
