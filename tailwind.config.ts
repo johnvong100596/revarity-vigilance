@@ -26,6 +26,7 @@ const config: Config = {
         "hint-strategic": "#1F6E5C",
         "crypto-accent": "#C97B1A",
         "invest-accent": "#5544B5",
+        "decay-warning": "#D97706",
 
         // shadcn/ui semantic colors (read HSL triplets from globals.css)
         border: "hsl(var(--border))",

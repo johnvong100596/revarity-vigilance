@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import {
+  daysSinceTouched,
+  getAccountDecayState,
+} from "@/lib/decay";
 import { formatBalance, toDecimal } from "@/lib/money";
 import type { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -21,6 +25,8 @@ export function AccountRow({ account, position }: AccountRowProps) {
   const isDebt = account.category === "debt";
   const balanceDecimal = toDecimal(account.balance);
   const display = formatBalance(balanceDecimal, account.currency);
+  const decay = getAccountDecayState(account);
+  const days = daysSinceTouched(account);
 
   return (
     <Link
@@ -32,8 +38,16 @@ export function AccountRow({ account, position }: AccountRowProps) {
         position === "only" && "rounded-card",
         position !== "first" &&
           position !== "only" &&
-          "border-t border-text-primary/6"
+          "border-t border-text-primary/6",
+        decay === "stale" && "opacity-70 grayscale"
       )}
+      title={
+        decay === "warning"
+          ? `Last checked ${days} day${days === 1 ? "" : "s"} ago`
+          : decay === "stale"
+            ? `Stale — ${days} days since check-in`
+            : undefined
+      }
     >
       <span
         className={cn(
@@ -43,7 +57,18 @@ export function AccountRow({ account, position }: AccountRowProps) {
         aria-hidden
       />
       <div className="pl-3">
-        <div className="text-sm font-medium text-text-primary">{account.name}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-text-primary">
+            {account.name}
+          </span>
+          {decay === "warning" && (
+            <span
+              aria-hidden
+              title={`Unchecked ${days} days`}
+              className="inline-block h-1.5 w-1.5 rounded-full bg-decay-warning"
+            />
+          )}
+        </div>
         {account.subtitle && (
           <div className="text-xs text-text-secondary">{account.subtitle}</div>
         )}

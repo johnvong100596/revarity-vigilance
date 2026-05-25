@@ -22,6 +22,7 @@
     --hint-strategic: #1F6E5C;
     --crypto-accent: #C97B1A;    /* amber — darkened for cream legibility */
     --invest-accent: #5544B5;    /* deeper purple — darkened for cream legibility */
+    --decay-warning: #D97706;    /* warm amber — "ignored 3-6 days" dot indicator */
 
     /* shadcn/ui HSL shim — mapped onto the cream/black/red palette above.
        Triplet form (no hsl()) so Tailwind's hsl(var(--token) / <alpha-value>) works. */

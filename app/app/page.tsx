@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 
 import { AccountRow } from "@/components/AccountRow";
+import { ReengageTakeover } from "@/components/ReengageTakeover";
+import { getUserDecaySummary } from "@/lib/decay";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatBalance,
@@ -98,6 +100,19 @@ export default async function HomePage() {
     hasAccounts && accounts.some((a) => a.currency !== homeCurrency);
 
   const TopHintIcon = topHint ? HINT_ICON[topHint.category] : null;
+
+  // Decay system per THESIS.md §4 — 14+ days since the user touched ANY
+  // account triggers the REENGAGE takeover. Replaces the normal home UI;
+  // a single ack of any account resolves it on the next page load.
+  const decay = getUserDecaySummary(accounts);
+  if (hasAccounts && decay.critical) {
+    return (
+      <ReengageTakeover
+        daysAway={decay.daysSinceAnyTouch}
+        criticalAccounts={decay.criticalAccounts}
+      />
+    );
+  }
 
   return (
     <>
