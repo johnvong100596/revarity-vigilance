@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
+import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
 import { CURRENCIES } from "@/lib/money";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ async function addAccountAction(formData: FormData) {
 
   if (error) throw new Error(`Could not create account: ${error.message}`);
 
+  await runHintsEngine(user.id);
   redirect("/app");
 }
 

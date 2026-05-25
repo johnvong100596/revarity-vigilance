@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
 
 const SeverityScore = {
@@ -215,7 +216,9 @@ export async function editAccountBalance(input: {
   if (checkinErr) throw new Error(`edit check_in failed: ${checkinErr.message}`);
 
   await maybeCompleteDay(user.id);
+  await runHintsEngine(user.id);
   revalidatePath("/app/checkin");
   revalidatePath("/app");
+  revalidatePath("/app/hints");
   revalidatePath(`/app/accounts/${accountId}`);
 }

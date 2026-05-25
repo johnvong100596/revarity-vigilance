@@ -1,0 +1,45 @@
+import { formatBalance, type Currency } from "@/lib/money";
+import type { HintEvaluator } from "./types";
+
+// v1 assumption: until we have a settings page that lets the user override
+// their long-run expected investment return, assume 6% as a reasonable
+// market baseline (S&P real return after inflation is ~6.5%).
+const ASSUMED_AVG_INVESTMENT_RETURN = 6.0;
+// THESIS.md §6 fires the hint when debt APR exceeds 70% of the assumed
+// return — debts above that threshold beat market returns risk-free.
+const APR_THRESHOLD = ASSUMED_AVG_INVESTMENT_RETURN * 0.7;
+
+export const H001: HintEvaluator = {
+  id: "H-001",
+  templateId: "H-001-debt-priority",
+  severity: "pay_attention",
+  title: "Debt prioritization",
+  eval(ctx) {
+    const debts = ctx.accounts.filter(
+      (a) => a.category === "debt" && a.apr !== null && Number(a.apr) > 0
+    );
+    if (debts.length === 0) return { fires: false };
+
+    const worst = debts.reduce((max, d) =>
+      Number(d.apr) > Number(max.apr) ? d : max
+    );
+    const apr = Number(worst.apr);
+    if (apr <= APR_THRESHOLD) return { fires: false };
+
+    const balanceStr = formatBalance(worst.balance, worst.currency as Currency);
+
+    return {
+      fires: true,
+      relatedAccountId: worst.id,
+      body: `Your ${worst.name} at ${apr.toFixed(2)}% APR (${balanceStr} balance) is your worst-weighted debt. Paying it off = ${apr.toFixed(2)}% guaranteed return vs ~${ASSUMED_AVG_INVESTMENT_RETURN}% market average. Prioritize this before new investments.`,
+      data: {
+        apr,
+        threshold: APR_THRESHOLD,
+        balance: Number(worst.balance),
+        currency: worst.currency,
+      },
+      actionLabel: "Plan payoff",
+      actionTarget: `/app/accounts/${worst.id}`,
+    };
+  },
+};
