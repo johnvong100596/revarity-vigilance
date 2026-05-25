@@ -10,24 +10,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Locked Vigilance tokens (ARCHITECTURE.md §9)
-        "bg-primary": "#0A0E1A",
-        "bg-secondary": "#1C2333",
-        "bg-tertiary": "#161B2A",
-        "accent-primary": "#D4AF37",
-        "accent-soft": "rgba(212, 175, 55, 0.12)",
-        "text-primary": "#F5F5F0",
-        "text-secondary": "#8B92A5",
-        "text-muted": "#5A5F70",
-        positive: "#6FA76F",
+        // Vigilance v2 — cream + black + red
+        "bg-primary": "#F5F1EB",
+        "bg-secondary": "#EBE5DC",
+        "bg-tertiary": "#FFFFFF",
+        "accent-primary": "#F04E37",
+        "accent-soft": "rgba(240, 78, 55, 0.08)",
+        "text-primary": "#1A1A1A",
+        "text-secondary": "#595959",
+        "text-muted": "#8C8C8C",
+        positive: "#1F6E5C",
         negative: "#C8553D",
         "hint-pay-attention": "#C8553D",
-        "hint-opportunity": "#D4AF37",
-        "hint-strategic": "#6FA76F",
-        "crypto-accent": "#FBBF24",
-        "invest-accent": "#A78BFA",
+        "hint-opportunity": "#F04E37",
+        "hint-strategic": "#1F6E5C",
+        "crypto-accent": "#C97B1A",
+        "invest-accent": "#5544B5",
 
-        // shadcn/ui semantic colors (reads HSL triplets from globals.css)
+        // shadcn/ui semantic colors (read HSL triplets from globals.css)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -63,15 +63,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        serif: ["Georgia", "serif"],
+        // Inter for everything — Apple/Tesla-adjacent geometric sans.
+        sans: ["var(--font-inter)", "system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        display: ["var(--font-inter)", "system-ui", "sans-serif"],
+        serif: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        // shadcn radius scale, anchored to --radius
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        // Vigilance-specific (ARCHITECTURE.md §9)
         row: "10px",
         card: "12px",
         hero: "14px",

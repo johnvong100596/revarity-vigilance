@@ -2,20 +2,23 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
+// Inter is loaded with the full weight range for Apple/Tesla-style hierarchy:
+// 300 light body, 400 default, 500 mid, 600 emphasis, 700 hero, 800 ultra-hero.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Vigilance",
+  title: "Vigilance — Watch your money. Or watch it drift.",
   description:
-    "Daily 30-second financial check-in ritual. Your money in front of you, every day, forever.",
+    "A 30-second daily ritual against financial drift. Multi-account check-in, CFO-grade hints, weekly reckoning, monthly close.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A0E1A",
+  themeColor: "#F5F1EB",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -27,10 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }

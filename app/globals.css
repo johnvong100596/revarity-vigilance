@@ -4,60 +4,65 @@
 
 @layer base {
   :root {
-    /* Locked Vigilance tokens (ARCHITECTURE.md §9) */
-    --bg-primary: #0A0E1A;
-    --bg-secondary: #1C2333;
-    --bg-tertiary: #161B2A;
-    --accent-primary: #D4AF37;
-    --accent-soft: rgba(212, 175, 55, 0.12);
-    --text-primary: #F5F5F0;
-    --text-secondary: #8B92A5;
-    --text-muted: #5A5F70;
-    --positive: #6FA76F;
-    --negative: #C8553D;
+    /* Vigilance v2 palette — cream + black + red.
+       Type-2 spec change approved by owner 2026-05-25; supersedes the
+       gold-on-dark tokens that ARCHITECTURE.md §9 had locked. */
+    --bg-primary: #F5F1EB;       /* warm cream — page background */
+    --bg-secondary: #EBE5DC;     /* deeper cream — cards on background */
+    --bg-tertiary: #FFFFFF;      /* pure white — emphasized surfaces */
+    --accent-primary: #F04E37;   /* signal red — primary CTA + active state */
+    --accent-soft: rgba(240, 78, 55, 0.08);
+    --text-primary: #1A1A1A;     /* near-black for body and headlines */
+    --text-secondary: #595959;   /* mid-gray for secondary text */
+    --text-muted: #8C8C8C;       /* light gray for tertiary / labels */
+    --positive: #1F6E5C;         /* dark teal — gains / acknowledged */
+    --negative: #C8553D;         /* warm red — losses / flagged */
     --hint-pay-attention: #C8553D;
-    --hint-opportunity: #D4AF37;
-    --hint-strategic: #6FA76F;
-    --crypto-accent: #FBBF24;
-    --invest-accent: #A78BFA;
+    --hint-opportunity: #F04E37;
+    --hint-strategic: #1F6E5C;
+    --crypto-accent: #C97B1A;    /* amber — darkened for cream legibility */
+    --invest-accent: #5544B5;    /* deeper purple — darkened for cream legibility */
 
-    /* shadcn/ui HSL shim — mapped onto the locked palette above.
+    /* shadcn/ui HSL shim — mapped onto the cream/black/red palette above.
        Triplet form (no hsl()) so Tailwind's hsl(var(--token) / <alpha-value>) works. */
-    --background: 225 44% 7%;
-    --foreground: 60 22% 95%;
-    --card: 225 29% 15%;
-    --card-foreground: 60 22% 95%;
-    --popover: 225 29% 15%;
-    --popover-foreground: 60 22% 95%;
-    --primary: 46 65% 52%;
-    --primary-foreground: 225 44% 7%;
-    --secondary: 225 33% 13%;
-    --secondary-foreground: 60 22% 95%;
-    --muted: 225 33% 13%;
-    --muted-foreground: 221 13% 60%;
-    --accent: 225 33% 13%;
-    --accent-foreground: 60 22% 95%;
+    --background: 36 30% 94%;
+    --foreground: 0 0% 10%;
+    --card: 34 27% 89%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 9 85% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 34 27% 89%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 34 27% 89%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 34 27% 89%;
+    --accent-foreground: 0 0% 10%;
     --destructive: 10 56% 51%;
-    --destructive-foreground: 60 22% 95%;
-    --border: 225 20% 22%;
-    --input: 225 20% 22%;
-    --ring: 46 65% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 12% 80%;
+    --input: 30 12% 80%;
+    --ring: 9 85% 58%;
     --radius: 0.625rem;
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     background: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
-    font-feature-settings: "tnum" 0;
+    font-feature-settings: "ss01", "cv11";
   }
 
   ::selection {
-    background: rgba(212, 175, 55, 0.35);
+    background: rgba(240, 78, 55, 0.18);
   }
 }
 
@@ -68,8 +73,12 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+  /* font-ledger retained as a name but now points at Inter tight-tracking
+     for big numeric displays (net worth etc.). Drops the Georgia serif. */
   .font-ledger {
-    font-family: Georgia, serif;
+    font-family: var(--font-inter), system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-weight: 500;
   }
 }
