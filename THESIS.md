@@ -17,7 +17,7 @@ Most people fail with money not because they make bad decisions — they fail be
 
 Personal/internal tool for Cena (CTO of Revarity) and team — now with a public marketing landing at `vigilance.revarity.com` for waitlist / friends-and-family access.
 
-**Aesthetic (v2, locked 2026-05-25):** premium, calm, ritualistic — Wealthsimple × Apple × Tesla. **Cream-on-light with signal-red accents.** Inter throughout, no serif. Heavy weights for hero typography, pill-shaped CTAs.
+**Aesthetic (v2, locked 2026-05-25):** premium, calm, ritualistic — Wealthsimple × Apple × Tesla. **Cream-on-light with signal-red accents** — single palette across the public marketing landing (`vigilance.revarity.com`) *and* the authenticated app (`/app/*`). Inter throughout, no serif. Heavy weights for hero typography, pill-shaped CTAs.
 
 > *Aesthetic v1 archived:* the original brief was gold-on-dark (Apple Fitness × Linear × Copilot Money). After the v1 landing shipped on May 25 the owner pivoted to a Wealthsimple-adjacent bright palette + Apple/Tesla-style sans for both marketing and the authed app. The v3 reference HTML in §5 below still shows the v1 visual treatment — read it as a structural reference (sections, rhythm, content hierarchy), not chromatic. Live tokens are in ARCHITECTURE.md §9.
 
@@ -110,9 +110,9 @@ The HTML below is the locked v3 design. Translate to React/Tailwind/Framer Motio
 
 1. **Header row:** menu icon (settings) left, bell icon (hints, with red badge count) right
 2. **Net worth display** — small "NET WORTH" label + USD badge, then big serif (Georgia) number, then change + streak below
-3. **Daily check-in card** — gold-bordered, "X accounts to acknowledge," arrow right
-4. **Expert Hint preview card** — top hint surfaced directly on home (gold left border)
-5. **Accounts list** — each row: gold left edge marker, name + subtitle, balance + change
+3. **Daily check-in card** — red-bordered, "X accounts to acknowledge," arrow right
+4. **Expert Hint preview card** — top hint surfaced directly on home (severity-colored left border: red for pay_attention, red for opportunity, teal for strategic)
+5. **Accounts list** — each row: type-keyed left edge marker (red for bank/cash, purple for investment, amber for crypto, warm-red for loans), name + subtitle, balance + change
 6. **Sunday + Monthly cards** — two small cards bottom
 
 ### Reference HTML (the locked v3 widget)
@@ -186,7 +186,7 @@ Three category sections with color-coded left borders on each hint card:
 - 🟡 **OPPORTUNITIES · 2** — `border-left: 2px solid #D4AF37`
 - 🟢 **STRATEGIC · 2** — `border-left: 2px solid #6FA76F`
 
-Each hint card: icon + category label, body text with key numbers in gold, two action buttons (Dismiss + Act).
+Each hint card: icon + category label, body text with key numbers in **accent red** (formerly gold in v1 — see §1 aesthetic pivot note), two action buttons (Dismiss + Got it).
 
 ---
 
