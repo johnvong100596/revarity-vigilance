@@ -15,7 +15,11 @@ Most people fail with money not because they make bad decisions — they fail be
 
 **Vigilance exists to make sure that never happens.** It's not a tracker. It's not a budget app. It's a **daily 30-second ritual** that keeps your money in front of you, every single day, forever.
 
-Personal/internal tool for Cena (CTO of Revarity) and team. Premium, calm, ritualistic aesthetic — Apple Fitness × Linear × Copilot Money. Gold-on-dark.
+Personal/internal tool for Cena (CTO of Revarity) and team — now with a public marketing landing at `vigilance.revarity.com` for waitlist / friends-and-family access.
+
+**Aesthetic (v2, locked 2026-05-25):** premium, calm, ritualistic — Wealthsimple × Apple × Tesla. **Cream-on-light with signal-red accents.** Inter throughout, no serif. Heavy weights for hero typography, pill-shaped CTAs.
+
+> *Aesthetic v1 archived:* the original brief was gold-on-dark (Apple Fitness × Linear × Copilot Money). After the v1 landing shipped on May 25 the owner pivoted to a Wealthsimple-adjacent bright palette + Apple/Tesla-style sans for both marketing and the authed app. The v3 reference HTML in §5 below still shows the v1 visual treatment — read it as a structural reference (sections, rhythm, content hierarchy), not chromatic. Live tokens are in ARCHITECTURE.md §9.
 
 ---
 

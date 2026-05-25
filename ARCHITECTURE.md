@@ -409,37 +409,50 @@ Home screen surfaces top 1 hint. `/hints` shows all sorted by score.
 
 ---
 
-## 9. Design Tokens (LOCKED — match v3 widget exactly)
+## 9. Design Tokens (LOCKED — v2, cream/black/red)
+
+> **Type-2 change 2026-05-25.** Original v1 was gold-on-dark
+> (Apple Fitness × Linear × Copilot Money). Owner approved pivot to
+> bright Wealthsimple-adjacent palette + Apple-style typography after
+> the v1 landing shipped. Both surfaces (marketing + authed app) now
+> use these tokens. Prior v1 values preserved in git history at
+> commits `e11a22e` (tokens) and `e6f77a7` (scaffold).
 
 ```css
 :root {
-  --bg-primary: #0A0E1A;
-  --bg-secondary: #1C2333;
-  --bg-tertiary: #161B2A;
+  --bg-primary: #F5F1EB;       /* warm cream — page background */
+  --bg-secondary: #EBE5DC;     /* deeper cream — card backgrounds */
+  --bg-tertiary: #FFFFFF;      /* pure white — emphasized surfaces */
 
-  --accent-primary: #D4AF37;      /* gold */
-  --accent-soft: rgba(212, 175, 55, 0.12);
+  --accent-primary: #F04E37;   /* signal red — primary CTA + active state */
+  --accent-soft: rgba(240, 78, 55, 0.08);
 
-  --text-primary: #F5F5F0;
-  --text-secondary: #8B92A5;
-  --text-muted: #5A5F70;
+  --text-primary: #1A1A1A;     /* near-black — body and headlines */
+  --text-secondary: #595959;   /* mid-gray — secondary text */
+  --text-muted: #8C8C8C;       /* light gray — tertiary / labels */
 
-  --positive: #6FA76F;            /* sage green */
-  --negative: #C8553D;            /* warm red */
+  --positive: #1F6E5C;         /* dark teal — gains / acknowledged */
+  --negative: #C8553D;         /* warm red — losses / flagged */
 
   --hint-pay-attention: #C8553D;
-  --hint-opportunity: #D4AF37;
-  --hint-strategic: #6FA76F;
+  --hint-opportunity: #F04E37;
+  --hint-strategic: #1F6E5C;
 
-  --crypto-accent: #FBBF24;       /* amber for crypto rows */
-  --invest-accent: #A78BFA;       /* purple for investment rows */
+  --crypto-accent: #C97B1A;    /* darkened amber for cream legibility */
+  --invest-accent: #5544B5;    /* deeper purple for cream legibility */
 }
 ```
 
 **Fonts:**
-- Default: Inter
-- Net worth + large numbers: Georgia (serif) for that "ledger / private bank" feel
-- Numerics: `tabular-nums`
+- All text: **Inter** (weights 300/400/500/600/700/800) — Apple/Tesla-
+  adjacent geometric sans, loaded via `next/font/google`
+- No serif. The v1 Georgia "ledger / private bank" feel is dropped;
+  big numerics now use Inter at 500–700 weight with `-0.025em` to
+  `-0.03em` tracking and `tabular-nums` to keep the editorial weight.
+- Smoothing: `optimizeLegibility` + `-webkit-font-smoothing: antialiased`
+
+**Buttons:** `rounded-full` (pill) by default at all sizes — matches
+Wealthsimple's signature shape and contrasts the rounded-md inputs.
 
 **Border radius:** 10px (rows), 12px (cards), 14px (hero), 24px (app frame).
 
