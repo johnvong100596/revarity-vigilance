@@ -31,12 +31,13 @@ async function maybeCompleteDay(userId: string) {
   const supabase = createClient();
   const today = todayISO();
 
+  // Active accounts is workspace-scoped via RLS (the SELECT policy filters
+  // to accounts in workspaces the user belongs to) — no user_id eq needed
   const [{ count: activeAccountsCount }, { count: checkedInCount }, { data: profile }] =
     await Promise.all([
       supabase
         .from("accounts")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
         .eq("archived", false),
       supabase
         .from("check_ins")
@@ -96,11 +97,11 @@ export async function acknowledgeAccount(input: { accountId: string }) {
   );
   if (error) throw new Error(`acknowledge failed: ${error.message}`);
 
+  // RLS handles workspace membership — the user_id filter excluded teammates
   await supabase
     .from("accounts")
     .update({ last_acknowledged_at: new Date().toISOString() })
-    .eq("id", accountId)
-    .eq("user_id", user.id);
+    .eq("id", accountId);
 
   await maybeCompleteDay(user.id);
   revalidatePath("/app/checkin");
@@ -122,12 +123,15 @@ export async function flagAccount(input: { accountId: string; note: string }) {
 
   const today = todayISO();
 
-  // Get account name for the hint title
+  // Get account name + workspace for the hint insert (hints.workspace_id is NOT NULL)
   const { data: account } = await supabase
     .from("accounts")
-    .select("name")
+    .select("name, workspace_id")
     .eq("id", accountId)
     .single();
+  if (!account?.workspace_id) {
+    throw new Error("Account not found or not in your workspace");
+  }
 
   const { error: checkinErr } = await supabase.from("check_ins").upsert(
     {
@@ -142,6 +146,7 @@ export async function flagAccount(input: { accountId: string; note: string }) {
 
   const { error: hintErr } = await supabase.from("hints").insert({
     user_id: user.id,
+    workspace_id: account.workspace_id,
     hint_template_id: "user_flag",
     category: "strategic",
     severity_score: SeverityScore.strategic,
@@ -198,6 +203,15 @@ export async function editAccountBalance(input: {
     .eq("id", accountId);
   if (updateErr) throw new Error(`balance update failed: ${updateErr.message}`);
 
+  // Pull home currency to set fx_rate correctly when the account currency
+  // matches (was hardcoded to USD; broke CAD/EUR users)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("home_currency")
+    .eq("id", user.id)
+    .single();
+  const homeCurrency = (profile?.home_currency as string) ?? "USD";
+
   // Write the snapshot for history (Day 6 fx-refresh will fill home-currency)
   const { error: snapErr } = await supabase.from("balance_snapshots").insert({
     user_id: user.id,
@@ -205,7 +219,7 @@ export async function editAccountBalance(input: {
     account_id: accountId,
     balance: newBalance,
     balance_home_currency: newBalance,
-    fx_rate: account?.currency === "USD" ? 1 : null,
+    fx_rate: account.currency === homeCurrency ? 1 : null,
   });
   if (snapErr) throw new Error(`snapshot failed: ${snapErr.message}`);
 

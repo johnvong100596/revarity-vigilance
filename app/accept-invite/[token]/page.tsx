@@ -23,17 +23,25 @@ export default async function AcceptInvitePage({
     redirect(`/login?next=${encodeURIComponent(`/accept-invite/${params.token}`)}`);
   }
 
-  // Look up the invite for context (RLS allows the invitee to read their
-  // own invite via the SECURITY DEFINER accept function; for display we
-  // peek at workspaces table which the SDK allows once we resolve the
-  // token via a server action below)
-  const { data: invite } = await supabase
-    .from("workspace_members")
-    .select(
-      "workspace_id, invited_email, role, accepted_at, workspaces!inner(name, owner_user_id)"
-    )
-    .eq("invite_token", params.token)
-    .maybeSingle();
+  // Peek the invite via SECURITY DEFINER RPC — the invitee isn't yet a
+  // member of the workspace, so the workspace_members SELECT policy
+  // would deny a direct query. peek_workspace_invite validates the
+  // email match and returns the metadata needed to render this page.
+  const { data: peekRows } = await supabase.rpc("peek_workspace_invite", {
+    token: params.token,
+  });
+  const peek = Array.isArray(peekRows) ? peekRows[0] : null;
+  const invite = peek
+    ? {
+        workspace_id: peek.workspace_id as string,
+        invited_email: peek.invited_email as string,
+        role: peek.role as string,
+        accepted_at: peek.accepted_at as string | null,
+        workspace_name: peek.workspace_name as string,
+        email_matches_current_user:
+          peek.email_matches_current_user as boolean,
+      }
+    : null;
 
   if (!invite) {
     return (
@@ -58,8 +66,7 @@ export default async function AcceptInvitePage({
     );
   }
 
-  const workspaceName =
-    (invite.workspaces as unknown as { name: string }).name ?? "Workspace";
+  const workspaceName = invite.workspace_name ?? "Workspace";
 
   if (invite.accepted_at) {
     return (

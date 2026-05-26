@@ -447,20 +447,23 @@ function WorkspaceInviteForm({
   const [role, setRole] = useState<WorkspaceRole>("member");
   const [pending, startTransition] = useTransition();
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteEmailSent, setInviteEmailSent] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
     setInviteUrl(null);
+    setInviteEmailSent(false);
     startTransition(async () => {
       try {
-        const { inviteUrl } = await inviteMember({
+        const { inviteUrl, emailSent } = await inviteMember({
           workspaceId: activeWorkspaceId,
           email: email.trim().toLowerCase(),
           role,
         });
         setInviteUrl(inviteUrl);
+        setInviteEmailSent(emailSent);
         setEmail("");
         router.refresh();
       } catch (e) {
@@ -505,7 +508,9 @@ function WorkspaceInviteForm({
       {inviteUrl && (
         <div className="mt-3 rounded-md border border-text-primary/10 bg-bg-primary p-3">
           <p className="mb-2 text-[11px] text-text-muted">
-            Copy this link and send it to them — emails are coming soon.
+            {inviteEmailSent
+              ? "Invite sent — they should see it in their inbox shortly. Link below as a backup."
+              : "Couldn't send the email automatically. Copy this link and send it to them directly."}
           </p>
           <code className="block break-all text-[11px] text-text-primary">
             {inviteUrl}

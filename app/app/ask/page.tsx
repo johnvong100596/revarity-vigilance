@@ -27,14 +27,19 @@ export default async function AskPage() {
     .gte("created_at", utcMidnight.toISOString())
     .order("created_at", { ascending: false });
 
-  const history = (historyRows ?? []).map((r) => ({
-    id: r.id as string,
-    question: r.question as string,
-    answer: r.answer as string,
-    created_at: r.created_at as string,
-  }));
+  // Hide in-flight placeholders (empty answer) from the visible history,
+  // but they still count toward the daily cap
+  const allRows = historyRows ?? [];
+  const history = allRows
+    .filter((r) => ((r.answer as string) ?? "").trim().length > 0)
+    .map((r) => ({
+      id: r.id as string,
+      question: r.question as string,
+      answer: r.answer as string,
+      created_at: r.created_at as string,
+    }));
 
-  const remainingToday = Math.max(0, DAILY_CAP - history.length);
+  const remainingToday = Math.max(0, DAILY_CAP - allRows.length);
 
   return (
     <>

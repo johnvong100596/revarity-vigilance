@@ -22,9 +22,10 @@ export const maxDuration = 300; // 5 min — Vercel cron default
  * 16:00 UTC (8am PT). Future enhancement: per-user timezones.
  *
  * Authentication: Vercel adds Authorization: Bearer $CRON_SECRET to
- * cron requests in production. We verify against process.env.CRON_SECRET.
- * In development (no CRON_SECRET set) requests are accepted — local-only
- * harness for testing.
+ * cron requests. We REQUIRE CRON_SECRET to be set (fail-closed). If
+ * the env var is missing the route returns 503 — never accept an
+ * anonymous request, even in dev. To run locally, export CRON_SECRET
+ * and pass the header on curl.
  *
  * Sends only to users with profile.weekly_email_enabled = true. Skips
  * users whose last touch is 14+ days ago (they get the re-engagement
@@ -33,11 +34,15 @@ export const maxDuration = 300; // 5 min — Vercel cron default
  */
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET is not configured" },
+      { status: 503 }
+    );
+  }
+  const auth = req.headers.get("authorization");
+  if (auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const admin = createAdminClient();
@@ -156,5 +161,5 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ sent, skipped, failures });
 }
 
-// Vercel cron probes with GET on initial setup; accept both.
-export const GET = POST;
+// Vercel cron uses POST. Don't alias GET — a GET alias makes the route
+// a one-curl drive-by trigger for the entire email blast.

@@ -116,6 +116,10 @@ export async function disconnectPlaidItem(input: { plaidItemRowId: string }) {
 
   revalidatePath("/app");
   revalidatePath("/app/settings");
+  // Daily check-in + hints lists cache the account set; force them to
+  // re-read so the disconnected accounts disappear immediately
+  revalidatePath("/app/checkin");
+  revalidatePath("/app/hints");
 }
 
 /* ── Account restore ─────────────────────────────────────────── */

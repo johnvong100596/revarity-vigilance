@@ -13,17 +13,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *
  * Webhooks arrive unauthenticated by HTTP standards — Plaid sends a
  * signed JWT in the `plaid-verification` header and the body is the
- * payload. For production we must verify this JWT against Plaid's
- * webhook_verification_key endpoint (https://plaid.com/docs/api/webhooks/webhook-verification/).
- *
- * v1 status: signature verification SKIPPED for sandbox. Add it before
- * production cutover. Sandbox tokens are non-sensitive and the worst case
- * is a forged webhook triggering a redundant accountsGet — annoying, not
- * catastrophic.
+ * payload. Every request is verified against Plaid's
+ * webhook_verification_key endpoint by verifyPlaidWebhook (lib/plaid-
+ * webhook-verify.ts) before any DB access.
  *
  * We use the admin client (service_role) here because the request isn't
- * authenticated as a specific user; we look up the user_id from the
- * plaid_items row keyed by Plaid's item_id.
+ * authenticated as a specific user; we look up the workspace_id from the
+ * plaid_items row keyed by Plaid's item_id. Service-role bypasses RLS,
+ * so every query in this handler MUST explicitly scope by workspace_id
+ * AND plaid_item_id when joining downstream tables.
  */
 
 interface PlaidWebhookPayload {
@@ -67,7 +65,13 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!item) {
     console.warn("[plaid webhook] unknown item_id", payload.item_id);
-    return NextResponse.json({ ok: true });
+    // Return 503 (not 200) so Plaid retries with backoff — protects against
+    // the exchange→webhook race where the first webhook arrives before the
+    // plaid_items row commits
+    return NextResponse.json(
+      { error: "unknown item_id" },
+      { status: 503 }
+    );
   }
 
   try {
@@ -138,6 +142,17 @@ async function refreshBalancesFromPlaid({
   withLiabilities?: boolean;
 }) {
   const admin = createAdminClient();
+  // Resolve home currency for the workspace owner so we can mark
+  // snapshot fx_rate=1 when account currency matches (rather than
+  // hardcoding USD as home)
+  const { data: ownerProfile } = await admin
+    .from("profiles")
+    .select("home_currency")
+    .eq("id", userId)
+    .single();
+  const homeCurrency =
+    (ownerProfile?.home_currency as string | undefined) ?? "USD";
+
   const res = await plaid().accountsGet({ access_token: accessToken });
   const now = new Date().toISOString();
 
@@ -145,10 +160,15 @@ async function refreshBalancesFromPlaid({
     const balance = Math.abs(a.balances.current ?? 0);
     const creditLimit = a.balances.limit ?? null;
 
+    // Triple-scope the lookup: workspace + plaid_item + plaid_account.
+    // Plaid account_ids are not globally unique by spec — adding
+    // plaid_item_id makes a cross-workspace collision impossible since
+    // plaid_item_id is unique per linked institution per workspace.
     const { data: acct } = await admin
       .from("accounts")
       .select("id, currency, category")
       .eq("workspace_id", workspaceId)
+      .eq("plaid_item_id", plaidItemRowId)
       .eq("plaid_account_id", a.account_id)
       .maybeSingle();
     if (!acct) continue;
@@ -168,7 +188,7 @@ async function refreshBalancesFromPlaid({
       account_id: acct.id,
       balance,
       balance_home_currency: balance,
-      fx_rate: acct.currency === "USD" ? 1 : null,
+      fx_rate: acct.currency === homeCurrency ? 1 : null,
     });
   }
 

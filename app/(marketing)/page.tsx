@@ -304,9 +304,9 @@ export default async function LandingPage() {
               credentials never touch our servers.
             </p>
             <p>
-              Your financial data lives in a Supabase project we provision for
-              you. You control the keys. Export, delete, or move it at any
-              time.
+              Your financial data is row-isolated in our database — your
+              account, your data, your view. Export, delete, or take it
+              elsewhere at any time.
             </p>
             <p>
               We&apos;re new. No fake user counts, no logo carousels. Vigilance

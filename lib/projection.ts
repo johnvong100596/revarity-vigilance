@@ -100,33 +100,39 @@ export function projectNetWorth(
   const totalDays = Math.ceil(years * 365);
   const stepDays = Math.max(7, Math.floor(totalDays / 36)); // ~36 points
 
-  // Track the debt-payoff delta vs straight-slope projection
-  const initialDebtTotal = debtStates.reduce((s, d) => s + d.balance, 0);
 
   for (let d = 0; d <= totalDays; d += stepDays) {
-    // Linear slope contribution
+    // Linear slope contribution — the historical slope already reflects
+    // whatever debt paydown happened in the 90-day window, so we DON'T
+    // also add a separate amortization benefit on top (that would
+    // double-count debt paydown). The amortization model is kept here
+    // only so we can detect the negative-amortization edge case below.
     const slopeContribution = dailySlope * d;
 
-    // Debt amortization step — advance every 30 days
     const monthsElapsed = Math.floor(d / 30);
-    let projectedDebtTotal = initialDebtTotal;
+    let negativeAmort = 0;
     if (monthsElapsed > 0 && debtStates.length > 0) {
-      projectedDebtTotal = 0;
       for (const ds of debtStates) {
         let b = ds.balance;
         for (let m = 0; m < monthsElapsed && b > 0; m++) {
           const interest = b * ds.aprMonthly;
-          const principal = Math.max(0, ds.minPayment - interest);
-          b = Math.max(0, b - principal);
+          const principal = ds.minPayment - interest;
+          if (principal <= 0) {
+            // Minimum payment doesn't cover interest — debt grows
+            b = b + (interest - ds.minPayment);
+            negativeAmort += interest - ds.minPayment;
+          } else {
+            b = Math.max(0, b - principal);
+          }
         }
-        projectedDebtTotal += b;
       }
     }
 
-    // Net worth = current + slope + amortization benefit (debt going down
-    // faster than trend implies adds to net worth)
-    const amortBenefit = initialDebtTotal - projectedDebtTotal;
-    const projected = current + slopeContribution + amortBenefit;
+    // Only adjust the projection if debts are growing despite payments
+    // (negative amortization). This makes the chart honest about
+    // high-rate revolving credit instead of implying minimum payments
+    // are containing the balance.
+    const projected = current + slopeContribution - negativeAmort;
 
     points.push({
       date: now.getTime() + d * 24 * 60 * 60 * 1000,

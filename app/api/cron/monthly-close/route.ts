@@ -17,16 +17,21 @@ export const maxDuration = 300;
 
 /**
  * Monthly Close email. Runs on the 1st of each month at 16:00 UTC (8am PT).
- * Same auth model as the Sunday Reckoning cron: optional CRON_SECRET
- * verification. Sends to users with monthly_email_enabled = true.
+ * Requires CRON_SECRET (fail-closed). POST-only — no GET alias so the
+ * route can't be triggered by a single anonymous curl. Sends to users
+ * with monthly_email_enabled = true.
  */
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET is not configured" },
+      { status: 503 }
+    );
+  }
+  const auth = req.headers.get("authorization");
+  if (auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const admin = createAdminClient();
@@ -145,4 +150,4 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ sent, skipped, failures });
 }
 
-export const GET = POST;
+// POST-only — see note in sunday-reckoning route about not aliasing GET.

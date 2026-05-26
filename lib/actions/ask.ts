@@ -109,9 +109,28 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     return { ok: false, error: "No active workspace" };
   }
 
-  // Daily cap check — UTC day window
+  // Daily cap — UTC day window. Race-safe pattern: insert a placeholder
+  // row FIRST, then re-count under that row. If the count exceeds the
+  // cap, rollback by deleting the placeholder. This makes the cap
+  // monotonic under concurrent requests at the cost of one extra round-
+  // trip; we keep that cost since each ask already triggers a Claude call.
   const utcMidnight = new Date();
   utcMidnight.setUTCHours(0, 0, 0, 0);
+
+  const { data: placeholder, error: placeholderErr } = await supabase
+    .from("ask_history")
+    .insert({
+      user_id: user.id,
+      workspace_id: workspaceId,
+      question: parsed.data.question,
+      answer: "", // filled on success; deleted on failure or over-cap
+      model: CLAUDE_MODEL,
+    })
+    .select("id")
+    .single();
+  if (placeholderErr || !placeholder?.id) {
+    return { ok: false, error: "Could not record question. Try again." };
+  }
 
   const { count: usedToday } = await supabase
     .from("ask_history")
@@ -119,7 +138,9 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     .eq("user_id", user.id)
     .gte("created_at", utcMidnight.toISOString());
 
-  if ((usedToday ?? 0) >= DAILY_CAP) {
+  if ((usedToday ?? 0) > DAILY_CAP) {
+    // Over cap — roll back our placeholder and refuse
+    await supabase.from("ask_history").delete().eq("id", placeholder.id);
     return {
       ok: false,
       error: `Daily limit reached (${DAILY_CAP} questions per day). Resets at midnight UTC.`,
@@ -213,22 +234,21 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     answer = await composeCopy(ASK_SYSTEM, userPrompt, 600);
   } catch (e) {
     console.error("[askVigilance] LLM call failed", e);
+    // Roll back the placeholder so the failed attempt doesn't eat a slot
+    await supabase.from("ask_history").delete().eq("id", placeholder.id);
     return {
       ok: false,
       error: "Couldn't reach the model. Try again in a moment.",
     };
   }
 
-  // Persist for daily cap accounting + user history view
-  const { error: insertErr } = await supabase.from("ask_history").insert({
-    user_id: user.id,
-    workspace_id: workspaceId,
-    question: parsed.data.question,
-    answer,
-    model: CLAUDE_MODEL,
-  });
-  if (insertErr) {
-    console.error("[askVigilance] history insert failed", insertErr);
+  // Fill the placeholder we inserted up front
+  const { error: updateErr } = await supabase
+    .from("ask_history")
+    .update({ answer })
+    .eq("id", placeholder.id);
+  if (updateErr) {
+    console.error("[askVigilance] history update failed", updateErr);
     // Answer still returns to the user — history loss is annoying but not blocking
   }
 

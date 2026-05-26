@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
+import { sendEmail } from "@/lib/email/send";
+import WorkspaceInviteEmail from "@/lib/email/WorkspaceInviteEmail";
 import { createClient } from "@/lib/supabase/server";
 
 /* ── Create workspace ──────────────────────────────────────────── */
@@ -100,7 +102,7 @@ export async function inviteMember(input: {
   workspaceId: string;
   email: string;
   role?: "owner" | "admin" | "member";
-}): Promise<{ inviteUrl: string }> {
+}): Promise<{ inviteUrl: string; emailSent: boolean; emailReason?: string }> {
   const parsed = InviteInput.parse(input);
   const supabase = createClient();
   const {
@@ -123,14 +125,44 @@ export async function inviteMember(input: {
     throw new Error(`Invite failed: ${error.message}`);
   }
 
-  // Until Resend is wired (see BLOCKERS), the owner copies this URL and
-  // sends it to the invitee out-of-band.
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://vigilance.revarity.com";
   const inviteUrl = `${baseUrl}/accept-invite/${token}`;
 
+  // Send the invite email via Resend. Best-effort — if Resend isn't
+  // configured or send fails, the owner can still copy the inviteUrl
+  // from the UI and forward it manually.
+  const [{ data: workspaceRow }, { data: inviterProfile }] = await Promise.all([
+    supabase
+      .from("workspaces")
+      .select("name")
+      .eq("id", parsed.workspaceId)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single(),
+  ]);
+
+  const sendResult = await sendEmail({
+    to: parsed.email.trim().toLowerCase(),
+    subject: `${(inviterProfile?.display_name as string) || "Someone"} invited you to ${(workspaceRow?.name as string) || "a workspace"} on Vigilance`,
+    component: WorkspaceInviteEmail({
+      inviterName:
+        (inviterProfile?.display_name as string) || user.email || "Someone",
+      workspaceName: (workspaceRow?.name as string) || "Workspace",
+      role: parsed.role ?? "member",
+      acceptUrl: inviteUrl,
+    }),
+  });
+
   revalidatePath("/app/settings");
-  return { inviteUrl };
+  return {
+    inviteUrl,
+    emailSent: sendResult.sent,
+    emailReason: sendResult.reason,
+  };
 }
 
 /* ── Accept invite ─────────────────────────────────────────────── */

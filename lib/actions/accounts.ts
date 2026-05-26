@@ -140,30 +140,43 @@ export async function updateAccountBalance(input: {
 
   const { data: account } = await supabase
     .from("accounts")
-    .select("currency")
+    .select("currency, workspace_id")
     .eq("id", accountId)
     .single();
+  if (!account?.workspace_id) {
+    throw new Error("Account not found or not in your workspace");
+  }
 
+  // Use workspace membership for authorization (RLS) — accounts are
+  // workspace-scoped now; the user_id eq would exclude teammates
   const { error: updateErr } = await supabase
     .from("accounts")
     .update({
       balance: newBalance,
       last_balance_updated_at: new Date().toISOString(),
     })
-    .eq("id", accountId)
-    .eq("user_id", user.id);
+    .eq("id", accountId);
   if (updateErr) throw new Error(`balance update failed: ${updateErr.message}`);
+
+  // Pull home currency for the fx_rate decision — was hardcoded to USD
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("home_currency")
+    .eq("id", user.id)
+    .single();
+  const homeCurrency = (profile?.home_currency as string) ?? "USD";
 
   const { error: snapErr } = await supabase.from("balance_snapshots").insert({
     user_id: user.id,
+    workspace_id: account.workspace_id,
     account_id: accountId,
     balance: newBalance,
     balance_home_currency: newBalance,
-    fx_rate: account?.currency === "USD" ? 1 : null,
+    fx_rate: account.currency === homeCurrency ? 1 : null,
   });
   if (snapErr) throw new Error(`snapshot failed: ${snapErr.message}`);
 
-  await runHintsEngine(user.id);
+  await runHintsEngine(user.id, { workspaceId: account.workspace_id });
   revalidatePath(`/app/accounts/${accountId}`);
   revalidatePath("/app");
   revalidatePath("/app/hints");
