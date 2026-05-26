@@ -19,19 +19,20 @@ export default async function AccountDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // RLS scopes by workspace membership — no explicit user_id needed.
+  // Workspace-scoped accounts visible to the user are the union of all
+  // workspaces they're a member of; account UUID is the unique key.
   const [accountRes, snapshotsRes] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
       .eq("id", params.id)
-      .eq("user_id", user.id)
       .eq("archived", false)
       .maybeSingle(),
     supabase
       .from("balance_snapshots")
       .select("balance, captured_at")
       .eq("account_id", params.id)
-      .eq("user_id", user.id)
       .order("captured_at", { ascending: true })
       .limit(60),
   ]);

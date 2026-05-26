@@ -7,6 +7,7 @@ export type AccountSource = "plaid" | "manual" | "csv" | "crypto_api";
 export interface Account {
   id: string;
   user_id: string;
+  workspace_id: string;
   name: string;
   subtitle: string | null;
   account_type: AccountType;
@@ -33,6 +34,28 @@ export interface Account {
   updated_at: string;
 }
 
+export type WorkspaceRole = "owner" | "admin" | "member";
+
+export interface Workspace {
+  id: string;
+  name: string;
+  owner_user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceMember {
+  id: string;
+  workspace_id: string;
+  user_id: string | null;
+  invited_email: string;
+  invite_token: string;
+  role: WorkspaceRole;
+  invited_by_user_id: string | null;
+  invited_at: string;
+  accepted_at: string | null;
+}
+
 export interface Profile {
   id: string;
   display_name: string | null;
@@ -45,6 +68,7 @@ export interface Profile {
   capital_waterfall: unknown;
   expert_hints_enabled: boolean;
   decay_warnings_enabled: boolean;
+  active_workspace_id: string;
   created_at: string;
   updated_at: string;
 }

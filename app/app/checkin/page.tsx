@@ -19,10 +19,19 @@ export default async function CheckinPage() {
 
   const today = todayISO();
 
-  const [accountsRes, checkinsRes, profileRes] = await Promise.all([
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("awareness_streak, last_checkin_date, active_workspace_id")
+    .eq("id", user.id)
+    .single();
+  if (!profileRow?.active_workspace_id) redirect("/login");
+  const workspaceId = profileRow.active_workspace_id as string;
+
+  const [accountsRes, checkinsRes] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
+      .eq("workspace_id", workspaceId)
       .eq("archived", false)
       .order("position", { ascending: true })
       .order("created_at", { ascending: true }),
@@ -31,11 +40,6 @@ export default async function CheckinPage() {
       .select("account_id")
       .eq("user_id", user.id)
       .eq("checkin_date", today),
-    supabase
-      .from("profiles")
-      .select("awareness_streak, last_checkin_date")
-      .eq("id", user.id)
-      .single(),
   ]);
 
   const allAccounts: Account[] = accountsRes.data ?? [];
@@ -44,9 +48,8 @@ export default async function CheckinPage() {
   );
   const remaining = allAccounts.filter((a) => !checkedInIds.has(a.id));
   const doneCount = checkedInIds.size;
-  const profile = profileRes.data;
-  const streak = profile?.awareness_streak ?? 0;
-  const finishedToday = profile?.last_checkin_date === today;
+  const streak = profileRow.awareness_streak ?? 0;
+  const finishedToday = profileRow.last_checkin_date === today;
 
   // 0 accounts → nudge to add one
   if (allAccounts.length === 0) {

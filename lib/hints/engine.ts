@@ -3,6 +3,12 @@ import type { Account, Profile } from "@/lib/types";
 import { HINT_REGISTRY } from "./registry";
 import { SEVERITY_SCORE, type UserContext } from "./types";
 
+interface RunOptions {
+  /** If provided, scope account fetch + insert to this workspace. If
+   * omitted, falls back to the user's active workspace from profile. */
+  workspaceId?: string;
+}
+
 /**
  * Evaluate every registered hint against the user's current state and insert
  * any new firings. Idempotent: if an active hint with the same template_id +
@@ -18,33 +24,38 @@ import { SEVERITY_SCORE, type UserContext } from "./types";
  * Failures are caught and logged — hints firing must NEVER block the
  * write that triggered evaluation.
  */
-export async function runHintsEngine(userId: string): Promise<void> {
+export async function runHintsEngine(
+  userId: string,
+  options: RunOptions = {}
+): Promise<void> {
   try {
     const supabase = createClient();
 
-    const [profileRes, accountsRes, activeHintsRes] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single(),
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    const profile = profileRow as Profile | null;
+    if (!profile) return;
+    if (profile.expert_hints_enabled === false) return;
+
+    const workspaceId = options.workspaceId ?? profile.active_workspace_id;
+    if (!workspaceId) return;
+
+    const [accountsRes, activeHintsRes] = await Promise.all([
       supabase
         .from("accounts")
         .select("*")
-        .eq("user_id", userId)
+        .eq("workspace_id", workspaceId)
         .eq("archived", false),
       supabase
         .from("hints")
         .select("hint_template_id, related_account_id")
-        .eq("user_id", userId)
+        .eq("workspace_id", workspaceId)
         .eq("status", "active"),
     ]);
 
-    const profile = profileRes.data as Profile | null;
-    if (!profile) return;
-    // Respect the user's preferences toggle — Settings page lets them
-    // skip the engine entirely if they don't want CFO-grade nags.
-    if (profile.expert_hints_enabled === false) return;
     const accounts = (accountsRes.data ?? []) as Account[];
 
     const dedupKeys = new Set(
@@ -74,6 +85,7 @@ export async function runHintsEngine(userId: string): Promise<void> {
       if (dedupKeys.has(key)) continue;
       rows.push({
         user_id: userId,
+        workspace_id: workspaceId,
         hint_template_id: r.evaluator.templateId,
         category: r.evaluator.severity,
         severity_score: SEVERITY_SCORE[r.evaluator.severity],

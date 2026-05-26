@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveWorkspaceId } from "@/lib/workspace";
 
 /* ── Shared validators ─────────────────────────────────────── */
 
@@ -90,9 +91,11 @@ export async function addAccount(formData: FormData) {
   }
   const data = parsed.data;
   const category = ACCOUNT_TYPE_CATEGORY[data.account_type];
+  const workspaceId = await getActiveWorkspaceId(supabase, user.id);
 
   const { error } = await supabase.from("accounts").insert({
     user_id: user.id,
+    workspace_id: workspaceId,
     name: data.name,
     subtitle: data.subtitle,
     account_type: data.account_type,
@@ -113,7 +116,7 @@ export async function addAccount(formData: FormData) {
 
   if (error) throw new Error(`Could not create account: ${error.message}`);
 
-  await runHintsEngine(user.id);
+  await runHintsEngine(user.id, { workspaceId });
   redirect("/app");
 }
 
@@ -197,6 +200,18 @@ export async function updateAccountDebtDetails(input: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Look up the workspace so we can re-run the hint engine in the right
+  // scope and to confirm the user is actually a member of the account's
+  // workspace (RLS handles this too, but explicit makes the error clearer)
+  const { data: acct } = await supabase
+    .from("accounts")
+    .select("workspace_id")
+    .eq("id", parsed.accountId)
+    .single();
+  if (!acct?.workspace_id) {
+    throw new Error("Account not found or not in your workspace");
+  }
+
   const { error } = await supabase
     .from("accounts")
     .update({
@@ -207,13 +222,12 @@ export async function updateAccountDebtDetails(input: {
       renewal_date: parsed.renewal_date,
       min_payment: parsed.min_payment,
     })
-    .eq("id", parsed.accountId)
-    .eq("user_id", user.id);
+    .eq("id", parsed.accountId);
   if (error) throw new Error(`debt update failed: ${error.message}`);
 
   // New fields may unlock hint firings (H-002 needs credit_limit +
   // statement_close_day; H-101 needs renewal_date + apr) — re-evaluate.
-  await runHintsEngine(user.id);
+  await runHintsEngine(user.id, { workspaceId: acct.workspace_id });
   revalidatePath(`/app/accounts/${parsed.accountId}`);
   revalidatePath("/app");
   revalidatePath("/app/hints");
@@ -233,11 +247,12 @@ export async function archiveAccount(input: { accountId: string }) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // RLS handles ownership check (must be owner/admin of the account's
+  // workspace). Strip the user_id eq since accounts are workspace-scoped now.
   const { error } = await supabase
     .from("accounts")
     .update({ archived: true })
-    .eq("id", accountId)
-    .eq("user_id", user.id);
+    .eq("id", accountId);
   if (error) throw new Error(`archive failed: ${error.message}`);
 
   revalidatePath("/app");

@@ -39,9 +39,8 @@ export async function POST(req: NextRequest) {
 
   const { data: item } = await supabase
     .from("plaid_items")
-    .select("id, access_token_encrypted")
+    .select("id, workspace_id, access_token_encrypted")
     .eq("id", body.plaid_item_row_id)
-    .eq("user_id", user.id)
     .maybeSingle();
   if (!item) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
@@ -60,8 +59,8 @@ export async function POST(req: NextRequest) {
 
       const { data: acct } = await supabase
         .from("accounts")
-        .select("id, currency, category")
-        .eq("user_id", user.id)
+        .select("id, currency, category, workspace_id")
+        .eq("workspace_id", item.workspace_id)
         .eq("plaid_account_id", a.account_id)
         .maybeSingle();
       if (!acct) continue;
@@ -79,6 +78,7 @@ export async function POST(req: NextRequest) {
 
       await supabase.from("balance_snapshots").insert({
         user_id: user.id,
+        workspace_id: acct.workspace_id,
         account_id: acct.id,
         balance,
         balance_home_currency: balance,
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       .update({ last_sync_at: now })
       .eq("id", item.id);
 
-    await runHintsEngine(user.id);
+    await runHintsEngine(user.id, { workspaceId: item.workspace_id });
 
     return NextResponse.json({ ok: true, updated, liabilities });
   } catch (e) {

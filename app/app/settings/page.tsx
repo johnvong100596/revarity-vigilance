@@ -7,6 +7,7 @@ import {
   PlaidItemCard,
   SignOutButton,
   ToggleRow,
+  WorkspaceSection,
 } from "./settings-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/settings";
 import { CURRENCIES } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
-import type { Account, Profile } from "@/lib/types";
+import type { Account, Profile, WorkspaceMember } from "@/lib/types";
 
 interface PlaidItemRow {
   id: string;
@@ -30,27 +31,74 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [profileRes, archivedRes, plaidItemsRes] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase
-      .from("accounts")
-      .select("id, name, subtitle")
-      .eq("user_id", user.id)
-      .eq("archived", true)
-      .order("name", { ascending: true }),
-    supabase
-      .from("plaid_items")
-      .select("id, institution_name, last_sync_at, status")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true }),
-  ]);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+  const profile = (profileRow ?? null) as Profile | null;
+  if (!profile?.active_workspace_id) redirect("/login");
+  const workspaceId = profile.active_workspace_id;
 
-  const profile = (profileRes.data ?? null) as Profile | null;
+  const [archivedRes, plaidItemsRes, workspacesRes, membersRes] =
+    await Promise.all([
+      supabase
+        .from("accounts")
+        .select("id, name, subtitle")
+        .eq("workspace_id", workspaceId)
+        .eq("archived", true)
+        .order("name", { ascending: true }),
+      supabase
+        .from("plaid_items")
+        .select("id, institution_name, last_sync_at, status")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: true }),
+      // All workspaces the user belongs to — for the switcher
+      supabase
+        .from("workspace_members")
+        .select("workspace_id, role, workspaces!inner(id, name, owner_user_id)")
+        .eq("user_id", user.id)
+        .not("accepted_at", "is", null),
+      // Members of the active workspace — for the team list
+      supabase
+        .from("workspace_members")
+        .select("id, user_id, invited_email, role, invited_at, accepted_at")
+        .eq("workspace_id", workspaceId)
+        .order("invited_at", { ascending: true }),
+    ]);
+
   const archived = (archivedRes.data ?? []) as Pick<
     Account,
     "id" | "name" | "subtitle"
   >[];
   const plaidItems = (plaidItemsRes.data ?? []) as PlaidItemRow[];
+  // Supabase JS resolves the !inner join inconsistently — sometimes the
+  // joined row is returned as an object, sometimes as a single-element
+  // array depending on the inferred FK. Normalize via unknown cast.
+  type RawMembershipRow = {
+    workspace_id: string;
+    role: "owner" | "admin" | "member";
+    workspaces:
+      | { id: string; name: string; owner_user_id: string }
+      | { id: string; name: string; owner_user_id: string }[]
+      | null;
+  };
+  const rawMemberships = (workspacesRes.data ?? []) as unknown as RawMembershipRow[];
+  const memberships = rawMemberships.map((m) => {
+    const ws = Array.isArray(m.workspaces) ? m.workspaces[0] : m.workspaces;
+    return {
+      id: m.workspace_id,
+      name: ws?.name ?? "Workspace",
+      role: m.role,
+      isActive: m.workspace_id === workspaceId,
+    };
+  });
+  const members = (membersRes.data ?? []) as Pick<
+    WorkspaceMember,
+    "id" | "user_id" | "invited_email" | "role" | "invited_at" | "accepted_at"
+  >[];
+  const activeWorkspace = memberships.find((m) => m.isActive);
+  const myRole = activeWorkspace?.role ?? "member";
 
   return (
     <>
@@ -123,6 +171,15 @@ export default async function SettingsPage() {
           </Button>
         </form>
       </section>
+
+      {/* Workspace */}
+      <WorkspaceSection
+        activeWorkspaceId={workspaceId}
+        memberships={memberships}
+        members={members}
+        currentUserId={user.id}
+        currentUserRole={myRole}
+      />
 
       {/* Preferences */}
       <section className="mb-10">

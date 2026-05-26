@@ -10,6 +10,7 @@ import {
   refreshLiabilitiesForItem,
 } from "@/lib/plaid";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveWorkspaceId } from "@/lib/workspace";
 
 const ExchangeInput = z.object({
   public_token: z.string().min(1),
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
   const institutionId = metadata.institution?.institution_id ?? null;
 
   try {
+    // Resolve which workspace this connection goes into
+    const workspaceId = await getActiveWorkspaceId(supabase, user.id);
+
     // 1. Exchange public token for the long-lived access token
     const exchange = await plaid().itemPublicTokenExchange({
       public_token: body.public_token,
@@ -58,6 +62,7 @@ export async function POST(req: NextRequest) {
       .from("plaid_items")
       .insert({
         user_id: user.id,
+        workspace_id: workspaceId,
         plaid_item_id: plaidItemId,
         access_token_encrypted: encryptedRef,
         institution_name: institutionName,
@@ -94,6 +99,7 @@ export async function POST(req: NextRequest) {
         : null;
       return {
         user_id: user.id,
+        workspace_id: workspaceId,
         name: a.name || a.official_name || "Account",
         subtitle: subtypeLabel,
         account_type: mapPlaidAccountType(plaidType),
@@ -124,6 +130,7 @@ export async function POST(req: NextRequest) {
     // 5. Seed an initial balance_snapshot for each
     const snapshots = insertedAccounts.map((acct) => ({
       user_id: user.id,
+      workspace_id: workspaceId,
       account_id: acct.id,
       balance: acct.balance,
       balance_home_currency: acct.balance,
@@ -142,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     // 7. Run hint evaluation now that new accounts (with full debt fields,
     //    if available) exist
-    await runHintsEngine(user.id);
+    await runHintsEngine(user.id, { workspaceId });
 
     return NextResponse.json({
       success: true,

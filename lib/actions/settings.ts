@@ -94,14 +94,13 @@ export async function disconnectPlaidItem(input: { plaidItemRowId: string }) {
     .from("plaid_items")
     .update({ status: "disconnected" })
     .eq("id", plaidItemRowId)
-    .eq("user_id", user.id);
+    ;
   if (itemErr) throw new Error(`disconnect item failed: ${itemErr.message}`);
 
   const { error: acctErr } = await supabase
     .from("accounts")
     .update({ archived: true })
-    .eq("plaid_item_id", plaidItemRowId)
-    .eq("user_id", user.id);
+    .eq("plaid_item_id", plaidItemRowId);
   if (acctErr) throw new Error(`archive accounts failed: ${acctErr.message}`);
 
   revalidatePath("/app");
@@ -123,8 +122,7 @@ export async function restoreAccount(input: { accountId: string }) {
   const { error } = await supabase
     .from("accounts")
     .update({ archived: false })
-    .eq("id", accountId)
-    .eq("user_id", user.id);
+    .eq("id", accountId);
   if (error) throw new Error(`restore failed: ${error.message}`);
 
   revalidatePath("/app");

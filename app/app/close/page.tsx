@@ -49,43 +49,45 @@ export default async function MonthlyClosePage() {
   const windowStart = new Date(monthStart);
   windowStart.setMonth(windowStart.getMonth() - 1);
 
-  const [accountsRes, snapshotsRes, profileRes, lockedRes, weeklyRes] =
-    await Promise.all([
-      supabase
-        .from("accounts")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("archived", false),
-      supabase
-        .from("balance_snapshots")
-        .select("account_id, balance, captured_at")
-        .eq("user_id", user.id)
-        .gte("captured_at", windowStart.toISOString())
-        .order("captured_at", { ascending: true }),
-      supabase
-        .from("profiles")
-        .select("home_currency")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("monthly_closes")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("month", month)
-        .maybeSingle(),
-      supabase
-        .from("weekly_reflections")
-        .select("week_starting, reflection_text")
-        .eq("user_id", user.id)
-        .gte("week_starting", monthStart.toISOString().slice(0, 10))
-        .lte("week_starting", monthEnd.toISOString().slice(0, 10))
-        .order("week_starting", { ascending: true }),
-    ]);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("home_currency, active_workspace_id")
+    .eq("id", user.id)
+    .single();
+  if (!profileRow?.active_workspace_id) redirect("/login");
+  const workspaceId = profileRow.active_workspace_id as string;
+
+  const [accountsRes, snapshotsRes, lockedRes, weeklyRes] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .eq("archived", false),
+    supabase
+      .from("balance_snapshots")
+      .select("account_id, balance, captured_at")
+      .eq("workspace_id", workspaceId)
+      .gte("captured_at", windowStart.toISOString())
+      .order("captured_at", { ascending: true }),
+    supabase
+      .from("monthly_closes")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("month", month)
+      .maybeSingle(),
+    supabase
+      .from("weekly_reflections")
+      .select("week_starting, reflection_text")
+      .eq("user_id", user.id)
+      .gte("week_starting", monthStart.toISOString().slice(0, 10))
+      .lte("week_starting", monthEnd.toISOString().slice(0, 10))
+      .order("week_starting", { ascending: true }),
+  ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const snapshots: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
   const homeCurrency: Currency =
-    (profileRes.data?.home_currency as Currency) ?? "USD";
+    (profileRow.home_currency as Currency) ?? "USD";
 
   const series = dailyNetWorthSeries(accounts, snapshots, monthStart, monthEnd);
   const waterfall = categoryWaterfall(accounts, snapshots, monthStart);

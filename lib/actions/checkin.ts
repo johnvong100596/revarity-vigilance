@@ -178,11 +178,16 @@ export async function editAccountBalance(input: {
 
   const { data: account } = await supabase
     .from("accounts")
-    .select("currency")
+    .select("currency, workspace_id")
     .eq("id", accountId)
     .single();
+  if (!account?.workspace_id) {
+    throw new Error("Account not found or not in your workspace");
+  }
 
-  // Update the live balance on the account row
+  // Update the live balance on the account row (RLS allows since the user
+  // is workspace owner/admin — for read-only members, this returns 0 rows
+  // and falls through silently. Day 10 audit: surface clearer error.)
   const { error: updateErr } = await supabase
     .from("accounts")
     .update({
@@ -190,13 +195,13 @@ export async function editAccountBalance(input: {
       last_balance_updated_at: new Date().toISOString(),
       last_acknowledged_at: new Date().toISOString(),
     })
-    .eq("id", accountId)
-    .eq("user_id", user.id);
+    .eq("id", accountId);
   if (updateErr) throw new Error(`balance update failed: ${updateErr.message}`);
 
   // Write the snapshot for history (Day 6 fx-refresh will fill home-currency)
   const { error: snapErr } = await supabase.from("balance_snapshots").insert({
     user_id: user.id,
+    workspace_id: account.workspace_id,
     account_id: accountId,
     balance: newBalance,
     balance_home_currency: newBalance,
@@ -216,7 +221,7 @@ export async function editAccountBalance(input: {
   if (checkinErr) throw new Error(`edit check_in failed: ${checkinErr.message}`);
 
   await maybeCompleteDay(user.id);
-  await runHintsEngine(user.id);
+  await runHintsEngine(user.id, { workspaceId: account.workspace_id });
   revalidatePath("/app/checkin");
   revalidatePath("/app");
   revalidatePath("/app/hints");

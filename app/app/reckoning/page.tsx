@@ -35,36 +35,38 @@ export default async function ReckoningPage() {
   const windowStart = new Date(weekStart);
   windowStart.setDate(windowStart.getDate() - 7);
 
-  const [accountsRes, snapshotsRes, profileRes, reflectionRes] =
-    await Promise.all([
-      supabase
-        .from("accounts")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("archived", false),
-      supabase
-        .from("balance_snapshots")
-        .select("account_id, balance, captured_at")
-        .eq("user_id", user.id)
-        .gte("captured_at", windowStart.toISOString())
-        .order("captured_at", { ascending: true }),
-      supabase
-        .from("profiles")
-        .select("home_currency")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("weekly_reflections")
-        .select("reflection_text")
-        .eq("user_id", user.id)
-        .eq("week_starting", formatISODate(weekStart))
-        .maybeSingle(),
-    ]);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("home_currency, active_workspace_id")
+    .eq("id", user.id)
+    .single();
+  if (!profileRow?.active_workspace_id) redirect("/login");
+  const workspaceId = profileRow.active_workspace_id as string;
+
+  const [accountsRes, snapshotsRes, reflectionRes] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .eq("archived", false),
+    supabase
+      .from("balance_snapshots")
+      .select("account_id, balance, captured_at")
+      .eq("workspace_id", workspaceId)
+      .gte("captured_at", windowStart.toISOString())
+      .order("captured_at", { ascending: true }),
+    supabase
+      .from("weekly_reflections")
+      .select("reflection_text")
+      .eq("user_id", user.id)
+      .eq("week_starting", formatISODate(weekStart))
+      .maybeSingle(),
+  ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const snapshots: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
   const homeCurrency: Currency =
-    (profileRes.data?.home_currency as Currency) ?? "USD";
+    (profileRow.home_currency as Currency) ?? "USD";
   const existingReflection = reflectionRes.data?.reflection_text ?? null;
 
   const series = dailyNetWorthSeries(accounts, snapshots, weekStart, weekEnd);

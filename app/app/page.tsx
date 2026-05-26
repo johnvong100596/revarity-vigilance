@@ -53,31 +53,36 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [accountsRes, profileRes, hintsRes] = await Promise.all([
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id")
+    .eq("id", user.id)
+    .single();
+  const profile = (profileRow ?? null) as Pick<
+    Profile,
+    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id"
+  > | null;
+  const workspaceId = profile?.active_workspace_id;
+  if (!workspaceId) redirect("/login");
+
+  const [accountsRes, hintsRes] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
+      .eq("workspace_id", workspaceId)
       .eq("archived", false)
       .order("position", { ascending: true })
       .order("created_at", { ascending: true }),
     supabase
-      .from("profiles")
-      .select("home_currency, awareness_streak, decay_warnings_enabled")
-      .eq("id", user.id)
-      .single(),
-    supabase
       .from("hints")
       .select("*")
+      .eq("workspace_id", workspaceId)
       .eq("status", "active")
       .order("severity_score", { ascending: false })
       .limit(5),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
-  const profile = (profileRes.data ?? null) as Pick<
-    Profile,
-    "home_currency" | "awareness_streak" | "decay_warnings_enabled"
-  > | null;
   const hints: Hint[] = hintsRes.data ?? [];
   const homeCurrency: Currency = profile?.home_currency ?? "USD";
   const streak = profile?.awareness_streak ?? 0;

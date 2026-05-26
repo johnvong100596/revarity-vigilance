@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: item } = await admin
     .from("plaid_items")
-    .select("id, user_id, access_token_encrypted")
+    .select("id, user_id, workspace_id, access_token_encrypted")
     .eq("plaid_item_id", payload.item_id)
     .maybeSingle();
   if (!item) {
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         await refreshBalancesFromPlaid({
           accessToken,
           userId: item.user_id,
+          workspaceId: item.workspace_id,
           plaidItemRowId: item.id,
         });
         break;
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
         await refreshBalancesFromPlaid({
           accessToken,
           userId: item.user_id,
+          workspaceId: item.workspace_id,
           plaidItemRowId: item.id,
           withLiabilities: true,
         });
@@ -112,11 +114,13 @@ export async function POST(req: NextRequest) {
 async function refreshBalancesFromPlaid({
   accessToken,
   userId,
+  workspaceId,
   plaidItemRowId,
   withLiabilities = false,
 }: {
   accessToken: string;
   userId: string;
+  workspaceId: string;
   plaidItemRowId: string;
   /** True for LIABILITIES webhook events — also re-fetches debt fields */
   withLiabilities?: boolean;
@@ -132,7 +136,7 @@ async function refreshBalancesFromPlaid({
     const { data: acct } = await admin
       .from("accounts")
       .select("id, currency, category")
-      .eq("user_id", userId)
+      .eq("workspace_id", workspaceId)
       .eq("plaid_account_id", a.account_id)
       .maybeSingle();
     if (!acct) continue;
@@ -148,6 +152,7 @@ async function refreshBalancesFromPlaid({
 
     await admin.from("balance_snapshots").insert({
       user_id: userId,
+      workspace_id: workspaceId,
       account_id: acct.id,
       balance,
       balance_home_currency: balance,

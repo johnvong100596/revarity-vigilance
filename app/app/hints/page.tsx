@@ -13,10 +13,17 @@ export default async function HintsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("active_workspace_id")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.active_workspace_id) redirect("/login");
+
   const { data } = await supabase
     .from("hints")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("workspace_id", profile.active_workspace_id)
     .eq("status", "active")
     .order("severity_score", { ascending: false })
     .order("fired_at", { ascending: false });
