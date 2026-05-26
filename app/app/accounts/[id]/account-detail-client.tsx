@@ -429,7 +429,11 @@ function DebtDetailsSection({ account }: { account: Account }) {
         hasAny ? (
           <dl className="overflow-hidden rounded-card border border-text-primary/8 bg-bg-tertiary divide-y divide-text-primary/6">
             {account.apr != null && (
-              <DetailRow label="APR" value={`${Number(account.apr).toFixed(2)}%`} />
+              <DetailRow
+                label="Yearly interest"
+                value={`${Number(account.apr).toFixed(2)}%`}
+                hint="What banks call APR — the % you pay on a year's balance"
+              />
             )}
             {account.credit_limit != null && (
               <DetailRow
@@ -439,19 +443,19 @@ function DebtDetailsSection({ account }: { account: Account }) {
             )}
             {account.statement_close_day != null && (
               <DetailRow
-                label="Statement close"
+                label="Bill cuts on"
                 value={`Day ${account.statement_close_day}`}
               />
             )}
             {account.payment_due_day != null && (
               <DetailRow
-                label="Payment due"
+                label="Pay by"
                 value={`Day ${account.payment_due_day}`}
               />
             )}
             {account.min_payment != null && (
               <DetailRow
-                label="Minimum payment"
+                label="Smallest payment to stay current"
                 value={formatBalance(account.min_payment, currency)}
               />
             )}
@@ -469,9 +473,9 @@ function DebtDetailsSection({ account }: { account: Account }) {
         ) : (
           <div className="rounded-card border border-dashed border-text-primary/15 bg-bg-tertiary p-4 text-center">
             <p className="text-xs leading-relaxed text-text-secondary">
-              Add APR, credit limit, and statement date so the hint engine can
-              evaluate H-001 (debt prio), H-002 (utilization), and H-101
-              (mortgage renewal) against this account.
+              Add the yearly interest rate, credit limit, and when your bill
+              cuts — then Vigilance can spot the patterns experts see (high
+              utilization near close, costly debt, mortgages worth shopping).
             </p>
             <button
               type="button"
@@ -508,10 +512,23 @@ function DebtDetailsSection({ account }: { account: Account }) {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="flex items-baseline justify-between px-4 py-3">
-      <dt className="text-xs text-text-secondary">{label}</dt>
+      <dt
+        className={`text-xs text-text-secondary ${hint ? "cursor-help underline decoration-text-secondary/30 decoration-dotted underline-offset-2" : ""}`}
+        title={hint}
+      >
+        {label}
+      </dt>
       <dd className="text-sm font-medium tabular-nums text-text-primary">
         {value}
       </dd>
@@ -551,7 +568,7 @@ function DebtEditForm({
       }}
       className="space-y-4 rounded-card border border-text-primary/10 bg-bg-tertiary p-4"
     >
-      <Field label="APR (%)">
+      <Field label="Yearly interest (%)">
         <input
           type="number"
           step="0.01"
@@ -562,6 +579,9 @@ function DebtEditForm({
           placeholder="e.g. 6.49"
           className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
         />
+        <p className="text-[11px] text-text-muted">
+          Banks call this APR. It&apos;s the % you pay on a year&apos;s balance.
+        </p>
       </Field>
       <Field label="Credit limit">
         <input
@@ -575,7 +595,7 @@ function DebtEditForm({
         />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Statement close day">
+        <Field label="Day bill cuts">
           <input
             type="number"
             min="1"
@@ -588,7 +608,7 @@ function DebtEditForm({
             className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
           />
         </Field>
-        <Field label="Payment due day">
+        <Field label="Day to pay by">
           <input
             type="number"
             min="1"
@@ -602,7 +622,7 @@ function DebtEditForm({
           />
         </Field>
       </div>
-      <Field label="Minimum payment">
+      <Field label="Smallest payment to stay current">
         <input
           type="number"
           step="0.01"

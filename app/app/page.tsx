@@ -144,7 +144,12 @@ export default async function HomePage() {
       {/* Net worth */}
       <section className="mb-8">
         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
-          Net worth
+          <span
+            title="What you'd have if you sold everything and paid off everything"
+            className="cursor-help underline decoration-text-muted/30 decoration-dotted underline-offset-2"
+          >
+            Net worth
+          </span>
           <span className="ml-2 rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent-primary">
             {homeCurrency}
           </span>

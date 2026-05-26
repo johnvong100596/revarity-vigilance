@@ -59,7 +59,7 @@ export const H002: HintEvaluator = {
       return {
         fires: true,
         relatedAccountId: card.id,
-        body: `${card.name} hits ${Math.round(utilization * 100)}% utilization in ${daysToClose} day${daysToClose === 1 ? "" : "s"} at statement close. Pay ${formatBalance(payoffNeeded, currency)} before then to keep under 30% — preserves credit score for upcoming credit needs.`,
+        body: `${card.name} is ${Math.round(utilization * 100)}% used and the bill cuts in ${daysToClose} day${daysToClose === 1 ? "" : "s"}. Pay ${formatBalance(payoffNeeded, currency)} before then to drop under 30% — banks ding your credit score when you stay high.`,
         data: {
           utilization,
           limit,

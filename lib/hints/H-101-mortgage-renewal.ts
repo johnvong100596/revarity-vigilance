@@ -46,7 +46,7 @@ export const H101: HintEvaluator = {
       return {
         fires: true,
         relatedAccountId: m.id,
-        body: `Your ${m.name} renews in ${monthsToRenewal} month${monthsToRenewal === 1 ? "" : "s"} at ${apr.toFixed(2)}%. Market 3-year fixed is ~${MARKET_BEST_RATE_PCT}%. Start shopping now — could save roughly ${formatBalance(annualSavings, currency)}/yr at renewal.`,
+        body: `Your ${m.name} renews in ${monthsToRenewal} month${monthsToRenewal === 1 ? "" : "s"} at ${apr.toFixed(2)}% a year. Big banks are quoting around ${MARKET_BEST_RATE_PCT}% on a 3-year. Start shopping now — could save roughly ${formatBalance(annualSavings, currency)} a year at renewal.`,
         data: {
           currentApr: apr,
           marketRate: MARKET_BEST_RATE_PCT,

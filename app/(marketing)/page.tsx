@@ -126,22 +126,22 @@ export default async function LandingPage() {
         <div className="mx-auto mt-20 max-w-[1100px] space-y-28 md:space-y-40">
           <Step
             num="01"
-            title="Add your accounts"
-            body="Bank, credit cards, investments, crypto, loans. Connect via Plaid or add manually. Multi-currency from day one."
+            title="Connect your banks"
+            body="Bank accounts, credit cards, mortgages, investments. Vigilance pulls balances automatically through Plaid (the bank-connection service trusted by 12,000+ banks). Read-only, sign-in details never touch our servers."
             visual={<MockAddAccount />}
             reverse={false}
           />
           <Step
             num="02"
             title="Check in daily, 30 seconds"
-            body="One card per account. Swipe right to acknowledge, up to flag. Your awareness streak builds. The ritual is the product."
+            body="One card per account. Swipe right when it looks good, up when something needs another look. Your awareness streak builds. The ritual is the product."
             visual={<MockSwipe />}
             reverse
           />
           <Step
             num="03"
             title="Catch what experts catch"
-            body="Mortgage windows. Debt math. Credit utilization. Tax residency days. Surfaced when it matters, not after."
+            body="Worst-cost debt. Credit utilization near bill close. Mortgage renewal windows. Tax residency days. Surfaced when it matters, not after."
             visual={<MockHints />}
             reverse={false}
           />

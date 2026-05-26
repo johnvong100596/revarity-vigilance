@@ -31,7 +31,7 @@ export const H001: HintEvaluator = {
     return {
       fires: true,
       relatedAccountId: worst.id,
-      body: `Your ${worst.name} at ${apr.toFixed(2)}% APR (${balanceStr} balance) is your worst-weighted debt. Paying it off = ${apr.toFixed(2)}% guaranteed return vs ~${ASSUMED_AVG_INVESTMENT_RETURN}% market average. Prioritize this before new investments.`,
+      body: `Your ${worst.name} charges ${apr.toFixed(2)}% a year on a ${balanceStr} balance — your most expensive debt. Paying it down beats the ~${ASSUMED_AVG_INVESTMENT_RETURN}% you'd expect from the market, risk-free. Tackle this before adding to investments.`,
       data: {
         apr,
         threshold: APR_THRESHOLD,
