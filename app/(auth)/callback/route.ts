@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   // persist. Cookie clears either way so we don't reattribute on
   // subsequent sign-ins.
   const refToken = request.cookies.get(REFERRAL_COOKIE)?.value;
-  let response = NextResponse.redirect(`${origin}${next}`);
+  const response = NextResponse.redirect(`${origin}${next}`);
 
   if (refToken) {
     try {
