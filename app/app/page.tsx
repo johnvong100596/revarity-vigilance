@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { AccountRow } from "@/components/AccountRow";
+import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { getUserDecaySummary } from "@/lib/decay";
 import { createClient } from "@/lib/supabase/server";
@@ -65,7 +66,7 @@ export default async function HomePage() {
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
 
-  const [accountsRes, hintsRes] = await Promise.all([
+  const [accountsRes, hintsRes, brokenItemsRes] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
@@ -80,10 +81,20 @@ export default async function HomePage() {
       .eq("status", "active")
       .order("severity_score", { ascending: false })
       .limit(5),
+    supabase
+      .from("plaid_items")
+      .select("id, institution_name, status")
+      .eq("workspace_id", workspaceId)
+      .in("status", ["error", "disconnected"]),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const hints: Hint[] = hintsRes.data ?? [];
+  const brokenBanks = (brokenItemsRes.data ?? []).map((b) => ({
+    id: b.id as string,
+    institutionName: (b.institution_name as string | null) ?? null,
+    status: b.status as string,
+  }));
   const homeCurrency: Currency = profile?.home_currency ?? "USD";
   const streak = profile?.awareness_streak ?? 0;
   const topHint = hints[0] ?? null;
@@ -145,6 +156,9 @@ export default async function HomePage() {
           )}
         </Link>
       </header>
+
+      {/* Reconnect banner — only renders when there are broken Plaid items */}
+      <PlaidReconnectBanner banks={brokenBanks} />
 
       {/* Net worth */}
       <section className="mb-8">

@@ -62,13 +62,20 @@ export function PlaidLinkButton() {
     [router]
   );
 
-  const onExit = useCallback((err: unknown) => {
+  const onExit = useCallback((err: unknown, metadata?: { institution?: { name?: string } | null }) => {
     // User dismissed or hit error in Plaid Link
     if (err) {
-      const msg =
-        err && typeof err === "object" && "display_message" in err
-          ? String((err as { display_message?: string }).display_message)
-          : "Link cancelled";
+      const errObj = err as { display_message?: string; error_code?: string };
+      const bankName = metadata?.institution?.name ?? "your bank";
+      let msg = `We couldn't connect to ${bankName}. Try again, or pick a different bank.`;
+      if (errObj.display_message) {
+        msg = errObj.display_message;
+      } else if (errObj.error_code === "INVALID_CREDENTIALS") {
+        msg = `Those sign-in details didn't work at ${bankName}. Try again on the bank's screen.`;
+      } else if (errObj.error_code === "ITEM_LOCKED") {
+        msg = `${bankName} locked the connection — sign in there first to unlock.`;
+      }
+      console.error("[plaid link] exit error", err);
       setErrorMsg(msg);
       setPhase("error");
       return;
