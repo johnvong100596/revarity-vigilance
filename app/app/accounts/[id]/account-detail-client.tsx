@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { CsvImportPanel } from "@/components/CsvImportPanel";
 import {
   archiveAccount,
   updateAccountBalance,
@@ -228,6 +229,11 @@ export function AccountDetailClient({
       {account.category === "debt" && (
         <DebtDetailsSection account={account} />
       )}
+
+      {/* CSV import — backfill chart history from a bank export */}
+      <section className="mb-8">
+        <CsvImportPanel accountId={account.id} />
+      </section>
 
       {/* Archive */}
       <section className="mb-6">
