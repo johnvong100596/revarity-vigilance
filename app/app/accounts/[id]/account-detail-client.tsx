@@ -15,6 +15,7 @@ import {
 import {
   archiveAccount,
   updateAccountBalance,
+  updateAccountDebtDetails,
 } from "@/lib/actions/accounts";
 import { formatBalance, type Currency } from "@/lib/money";
 import type { Account } from "@/lib/types";
@@ -222,6 +223,12 @@ export function AccountDetailClient({
         )}
       </section>
 
+      {/* Debt details — only on debt accounts. Wires the data needed for
+          H-001 (debt prio), H-002 (credit util), H-101 (mortgage renewal). */}
+      {account.category === "debt" && (
+        <DebtDetailsSection account={account} />
+      )}
+
       {/* Archive */}
       <section className="mb-6">
         {!confirmDelete ? (
@@ -348,5 +355,302 @@ function ArchiveConfirm({
         </div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+/* ── Debt details section ────────────────────────────────────── */
+
+interface DebtFields {
+  apr: number | null;
+  credit_limit: number | null;
+  statement_close_day: number | null;
+  payment_due_day: number | null;
+  renewal_date: string | null;
+  min_payment: number | null;
+}
+
+function DebtDetailsSection({ account }: { account: Account }) {
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Local state for edit form
+  const [draft, setDraft] = useState<DebtFields>({
+    apr: account.apr,
+    credit_limit: account.credit_limit,
+    statement_close_day: account.statement_close_day,
+    payment_due_day: account.payment_due_day,
+    renewal_date: account.renewal_date,
+    min_payment: account.min_payment,
+  });
+
+  function save() {
+    setErrorMsg(null);
+    startTransition(async () => {
+      try {
+        await updateAccountDebtDetails({
+          accountId: account.id,
+          ...draft,
+        });
+        setEditing(false);
+      } catch (e) {
+        setErrorMsg(e instanceof Error ? e.message : "Update failed");
+      }
+    });
+  }
+
+  const currency = account.currency as Currency;
+  const hasAny =
+    account.apr != null ||
+    account.credit_limit != null ||
+    account.statement_close_day != null ||
+    account.payment_due_day != null ||
+    account.renewal_date != null ||
+    account.min_payment != null;
+
+  return (
+    <section className="mb-8">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Debt details
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs font-medium text-accent-primary underline-offset-4 hover:underline"
+          >
+            {hasAny ? "Edit" : "Add details"}
+          </button>
+        )}
+      </div>
+
+      {!editing ? (
+        hasAny ? (
+          <dl className="overflow-hidden rounded-card border border-text-primary/8 bg-bg-tertiary divide-y divide-text-primary/6">
+            {account.apr != null && (
+              <DetailRow label="APR" value={`${Number(account.apr).toFixed(2)}%`} />
+            )}
+            {account.credit_limit != null && (
+              <DetailRow
+                label="Credit limit"
+                value={formatBalance(account.credit_limit, currency)}
+              />
+            )}
+            {account.statement_close_day != null && (
+              <DetailRow
+                label="Statement close"
+                value={`Day ${account.statement_close_day}`}
+              />
+            )}
+            {account.payment_due_day != null && (
+              <DetailRow
+                label="Payment due"
+                value={`Day ${account.payment_due_day}`}
+              />
+            )}
+            {account.min_payment != null && (
+              <DetailRow
+                label="Minimum payment"
+                value={formatBalance(account.min_payment, currency)}
+              />
+            )}
+            {account.renewal_date != null && (
+              <DetailRow
+                label="Renewal date"
+                value={new Date(account.renewal_date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              />
+            )}
+          </dl>
+        ) : (
+          <div className="rounded-card border border-dashed border-text-primary/15 bg-bg-tertiary p-4 text-center">
+            <p className="text-xs leading-relaxed text-text-secondary">
+              Add APR, credit limit, and statement date so the hint engine can
+              evaluate H-001 (debt prio), H-002 (utilization), and H-101
+              (mortgage renewal) against this account.
+            </p>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-3 inline-flex items-center text-xs font-semibold text-accent-primary underline-offset-4 hover:underline"
+            >
+              Add details →
+            </button>
+          </div>
+        )
+      ) : (
+        <DebtEditForm
+          draft={draft}
+          setDraft={setDraft}
+          pending={pending}
+          onSave={save}
+          onCancel={() => {
+            setDraft({
+              apr: account.apr,
+              credit_limit: account.credit_limit,
+              statement_close_day: account.statement_close_day,
+              payment_due_day: account.payment_due_day,
+              renewal_date: account.renewal_date,
+              min_payment: account.min_payment,
+            });
+            setEditing(false);
+          }}
+        />
+      )}
+      {errorMsg && (
+        <p className="mt-2 text-center text-xs text-negative">{errorMsg}</p>
+      )}
+    </section>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between px-4 py-3">
+      <dt className="text-xs text-text-secondary">{label}</dt>
+      <dd className="text-sm font-medium tabular-nums text-text-primary">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function DebtEditForm({
+  draft,
+  setDraft,
+  pending,
+  onSave,
+  onCancel,
+}: {
+  draft: DebtFields;
+  setDraft: (next: DebtFields) => void;
+  pending: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  function setField<K extends keyof DebtFields>(key: K, value: DebtFields[K]) {
+    setDraft({ ...draft, [key]: value });
+  }
+
+  function toNumOrNull(v: string): number | null {
+    const trimmed = v.trim();
+    if (trimmed === "") return null;
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave();
+      }}
+      className="space-y-4 rounded-card border border-text-primary/10 bg-bg-tertiary p-4"
+    >
+      <Field label="APR (%)">
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          max="100"
+          value={draft.apr ?? ""}
+          onChange={(e) => setField("apr", toNumOrNull(e.target.value))}
+          placeholder="e.g. 6.49"
+          className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+        />
+      </Field>
+      <Field label="Credit limit">
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={draft.credit_limit ?? ""}
+          onChange={(e) => setField("credit_limit", toNumOrNull(e.target.value))}
+          placeholder="Credit cards only"
+          className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Statement close day">
+          <input
+            type="number"
+            min="1"
+            max="31"
+            value={draft.statement_close_day ?? ""}
+            onChange={(e) =>
+              setField("statement_close_day", toNumOrNull(e.target.value))
+            }
+            placeholder="1–31"
+            className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+          />
+        </Field>
+        <Field label="Payment due day">
+          <input
+            type="number"
+            min="1"
+            max="31"
+            value={draft.payment_due_day ?? ""}
+            onChange={(e) =>
+              setField("payment_due_day", toNumOrNull(e.target.value))
+            }
+            placeholder="1–31"
+            className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+          />
+        </Field>
+      </div>
+      <Field label="Minimum payment">
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={draft.min_payment ?? ""}
+          onChange={(e) => setField("min_payment", toNumOrNull(e.target.value))}
+          placeholder="Monthly minimum"
+          className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+        />
+      </Field>
+      <Field label="Renewal date (mortgages)">
+        <input
+          type="date"
+          value={draft.renewal_date ?? ""}
+          onChange={(e) =>
+            setField("renewal_date", e.target.value === "" ? null : e.target.value)
+          }
+          className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
+        />
+      </Field>
+      <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="flex-1 rounded-full border border-text-primary/15 bg-bg-tertiary py-3 text-sm font-semibold text-text-primary transition hover:bg-bg-secondary disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={pending}
+          className="flex-1 rounded-full bg-accent-primary py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        >
+          {pending ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary">
+        {label}
+      </div>
+      {children}
+    </div>
   );
 }

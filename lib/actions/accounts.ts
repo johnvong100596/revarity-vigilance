@@ -7,16 +7,123 @@ import { z } from "zod";
 import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
 
+/* ── Shared validators ─────────────────────────────────────── */
+
+const AccountTypeEnum = z.enum(["bank", "crypto", "investment", "loan", "cash"]);
+const CurrencyEnum = z.enum(["USD", "CAD", "EUR", "PYG"]);
+
+const OptionalPositiveNumber = z
+  .union([z.number(), z.null(), z.literal("")])
+  .transform((v) => (v === "" || v === null ? null : Number(v)))
+  .pipe(z.number().min(0).nullable());
+
+const OptionalDayOfMonth = z
+  .union([z.number(), z.null(), z.literal("")])
+  .transform((v) => (v === "" || v === null ? null : Number(v)))
+  .pipe(z.number().int().min(1).max(31).nullable());
+
+const OptionalISODate = z
+  .union([z.string(), z.null()])
+  .transform((v) => (v === "" || v === null ? null : v))
+  .pipe(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable());
+
+/* ── Create account ────────────────────────────────────────── */
+
+const ACCOUNT_TYPE_CATEGORY: Record<
+  z.infer<typeof AccountTypeEnum>,
+  "asset" | "debt"
+> = {
+  bank: "asset",
+  cash: "asset",
+  investment: "asset",
+  crypto: "asset",
+  loan: "debt",
+};
+
+const AddAccountInput = z.object({
+  name: z.string().min(1, "Name is required").max(64),
+  subtitle: z.string().max(64).nullable(),
+  account_type: AccountTypeEnum,
+  currency: CurrencyEnum,
+  balance: z.number().finite(),
+  apr: OptionalPositiveNumber,
+  credit_limit: OptionalPositiveNumber,
+  statement_close_day: OptionalDayOfMonth,
+  payment_due_day: OptionalDayOfMonth,
+  renewal_date: OptionalISODate,
+  min_payment: OptionalPositiveNumber,
+});
+
+function parseDebtFields(formData: FormData) {
+  return {
+    apr: formData.get("apr"),
+    credit_limit: formData.get("credit_limit"),
+    statement_close_day: formData.get("statement_close_day"),
+    payment_due_day: formData.get("payment_due_day"),
+    renewal_date: formData.get("renewal_date"),
+    min_payment: formData.get("min_payment"),
+  };
+}
+
+export async function addAccount(formData: FormData) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const raw = {
+    name: String(formData.get("name") ?? "").trim(),
+    subtitle: String(formData.get("subtitle") ?? "").trim() || null,
+    account_type: formData.get("account_type"),
+    currency: formData.get("currency"),
+    balance: Number(formData.get("balance") ?? 0),
+    ...parseDebtFields(formData),
+  };
+
+  const parsed = AddAccountInput.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(
+      "Invalid input: " +
+        JSON.stringify(parsed.error.flatten().fieldErrors)
+    );
+  }
+  const data = parsed.data;
+  const category = ACCOUNT_TYPE_CATEGORY[data.account_type];
+
+  const { error } = await supabase.from("accounts").insert({
+    user_id: user.id,
+    name: data.name,
+    subtitle: data.subtitle,
+    account_type: data.account_type,
+    category,
+    currency: data.currency,
+    balance: data.balance,
+    apr: data.account_type === "loan" ? data.apr : null,
+    credit_limit: data.account_type === "loan" ? data.credit_limit : null,
+    statement_close_day:
+      data.account_type === "loan" ? data.statement_close_day : null,
+    payment_due_day:
+      data.account_type === "loan" ? data.payment_due_day : null,
+    renewal_date: data.account_type === "loan" ? data.renewal_date : null,
+    min_payment: data.account_type === "loan" ? data.min_payment : null,
+    source: "manual",
+    last_balance_updated_at: new Date().toISOString(),
+  });
+
+  if (error) throw new Error(`Could not create account: ${error.message}`);
+
+  await runHintsEngine(user.id);
+  redirect("/app");
+}
+
+/* ── Edit balance (no check_in side-effect) ────────────────── */
+
 const UpdateBalanceInput = z.object({
   accountId: z.string().uuid(),
   newBalance: z.number().finite(),
 });
 
-/**
- * Update a single account's balance WITHOUT creating a check_in row.
- * (Use editAccountBalance from lib/actions/checkin.ts for the ritual variant
- * that also writes a check_in.)
- */
 export async function updateAccountBalance(input: {
   accountId: string;
   newBalance: number;
@@ -59,15 +166,65 @@ export async function updateAccountBalance(input: {
   revalidatePath("/app/hints");
 }
 
+/* ── Edit debt details (APR, credit limit, etc.) ───────────── */
+
+const UpdateDebtDetailsInput = z.object({
+  accountId: z.string().uuid(),
+  apr: z.number().min(0).max(100).nullable(),
+  credit_limit: z.number().min(0).nullable(),
+  statement_close_day: z.number().int().min(1).max(31).nullable(),
+  payment_due_day: z.number().int().min(1).max(31).nullable(),
+  renewal_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  min_payment: z.number().min(0).nullable(),
+});
+
+export async function updateAccountDebtDetails(input: {
+  accountId: string;
+  apr: number | null;
+  credit_limit: number | null;
+  statement_close_day: number | null;
+  payment_due_day: number | null;
+  renewal_date: string | null;
+  min_payment: number | null;
+}) {
+  const parsed = UpdateDebtDetailsInput.parse(input);
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("accounts")
+    .update({
+      apr: parsed.apr,
+      credit_limit: parsed.credit_limit,
+      statement_close_day: parsed.statement_close_day,
+      payment_due_day: parsed.payment_due_day,
+      renewal_date: parsed.renewal_date,
+      min_payment: parsed.min_payment,
+    })
+    .eq("id", parsed.accountId)
+    .eq("user_id", user.id);
+  if (error) throw new Error(`debt update failed: ${error.message}`);
+
+  // New fields may unlock hint firings (H-002 needs credit_limit +
+  // statement_close_day; H-101 needs renewal_date + apr) — re-evaluate.
+  await runHintsEngine(user.id);
+  revalidatePath(`/app/accounts/${parsed.accountId}`);
+  revalidatePath("/app");
+  revalidatePath("/app/hints");
+}
+
+/* ── Archive ───────────────────────────────────────────────── */
+
 const ArchiveInput = z.object({
   accountId: z.string().uuid(),
 });
 
-/**
- * Soft-delete: set archived=true. The home query filters this out so it
- * disappears from the UI. Data is preserved (snapshots, check_ins, hints)
- * and could be restored by flipping archived=false from settings later.
- */
 export async function archiveAccount(input: { accountId: string }) {
   const { accountId } = ArchiveInput.parse(input);
   const supabase = createClient();
