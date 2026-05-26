@@ -12,8 +12,10 @@ import {
 
 import { AccountRow } from "@/components/AccountRow";
 import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
+import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { getUserDecaySummary } from "@/lib/decay";
+import type { RawSnapshot } from "@/lib/rituals";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatBalance,
@@ -66,7 +68,11 @@ export default async function HomePage() {
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
 
-  const [accountsRes, hintsRes, brokenItemsRes] = await Promise.all([
+  // 90-day balance snapshots feed the projection chart's trend slope
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
@@ -86,10 +92,17 @@ export default async function HomePage() {
       .select("id, institution_name, status")
       .eq("workspace_id", workspaceId)
       .in("status", ["error", "disconnected"]),
+    supabase
+      .from("balance_snapshots")
+      .select("account_id, balance, captured_at")
+      .eq("workspace_id", workspaceId)
+      .gte("captured_at", ninetyDaysAgo.toISOString())
+      .order("captured_at", { ascending: true }),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const hints: Hint[] = hintsRes.data ?? [];
+  const snapshots90d: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
   const brokenBanks = (brokenItemsRes.data ?? []).map((b) => ({
     id: b.id as string,
     institutionName: (b.institution_name as string | null) ?? null,
@@ -267,6 +280,12 @@ export default async function HomePage() {
           >
             <Plus className="h-3.5 w-3.5" /> Connect another bank
           </Link>
+
+          <ProjectionChart
+            accounts={accounts}
+            snapshots={snapshots90d}
+            homeCurrency={homeCurrency}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <Link
