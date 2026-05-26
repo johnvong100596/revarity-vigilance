@@ -344,6 +344,12 @@ export default async function LandingPage() {
             Vigilance
           </div>
           <div className="flex flex-col gap-3 text-sm text-text-secondary md:flex-row md:items-center md:gap-8">
+            <Link
+              href="/login"
+              className="transition hover:text-text-primary"
+            >
+              Sign in
+            </Link>
             <a
               href="mailto:coo@revarity.com"
               className="transition hover:text-text-primary"
