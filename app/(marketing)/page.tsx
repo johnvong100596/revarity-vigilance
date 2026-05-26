@@ -7,6 +7,9 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { AnimatedSection } from "@/components/marketing/AnimatedSection";
+import { HeroOrb } from "@/components/marketing/HeroOrb";
+import { ParallaxBlock } from "@/components/marketing/ParallaxBlock";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -24,7 +27,28 @@ export default async function LandingPage() {
   if (user) redirect("/app");
 
   return (
-    <main className="min-h-screen bg-bg-primary text-text-primary">
+    <main className="relative min-h-screen overflow-hidden bg-bg-primary text-text-primary">
+      {/* Decorative scroll-linked gradient orbs (behind content, pointer-events:none) */}
+      <HeroOrb
+        className="left-1/2 top-[18vh] -translate-x-1/2"
+        size={720}
+        intensity={0.16}
+      />
+      <HeroOrb
+        className="left-[10%] top-[55vh]"
+        size={520}
+        intensity={0.1}
+        driftY={-180}
+        driftX={80}
+      />
+      <HeroOrb
+        className="right-[5%] top-[90vh]"
+        size={600}
+        intensity={0.12}
+        driftY={250}
+        driftX={-100}
+      />
+
       {/* ─── NAV ─── */}
       <nav className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5 md:px-10 md:py-7">
         <div className="text-xl font-semibold tracking-tight">Vigilance</div>
@@ -45,7 +69,7 @@ export default async function LandingPage() {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="mx-auto max-w-[1200px] px-6 pb-24 pt-16 md:px-10 md:pb-40 md:pt-28">
+      <section className="relative mx-auto max-w-[1200px] px-6 pb-24 pt-16 md:px-10 md:pb-40 md:pt-28">
         <div className="mx-auto max-w-[1000px] text-center">
           <h1 className="text-balance text-[52px] font-bold leading-[0.95] tracking-[-0.04em] text-text-primary md:text-[112px]">
             Watch your money.
@@ -73,23 +97,23 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* Hero visual — phone-frame swipe stack */}
-        <div className="mx-auto mt-20 max-w-[420px] md:mt-28">
+        {/* Hero visual — phone-frame swipe stack with scroll parallax */}
+        <ParallaxBlock className="mx-auto mt-20 max-w-[420px] md:mt-28" amount={-50}>
           <HeroMockup />
-        </div>
+        </ParallaxBlock>
       </section>
 
       {/* ─── TRUST STRIP ─── */}
-      <section className="border-y border-text-primary/10 bg-bg-tertiary">
+      <AnimatedSection className="relative border-y border-text-primary/10 bg-bg-tertiary">
         <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-y-8 px-6 py-10 sm:grid-cols-3 md:px-10 md:py-14">
           <Stat top="30 seconds" bottom="daily check-in" />
           <Stat top="4 currencies" bottom="USD · CAD · EUR · PYG" />
           <Stat top="6 expert lenses" bottom="growing weekly" />
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
+      <AnimatedSection className="relative mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
         <div className="mx-auto max-w-[720px] text-center">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             How it works
@@ -122,10 +146,10 @@ export default async function LandingPage() {
             reverse={false}
           />
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── EDITORIAL QUOTE ─── */}
-      <section className="bg-bg-tertiary">
+      <AnimatedSection className="relative bg-bg-tertiary">
         <div className="mx-auto max-w-[1000px] px-6 py-28 text-center md:px-10 md:py-40">
           <p className="text-balance text-[32px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary md:text-[56px]">
             “Finance is like your widow.
@@ -136,10 +160,10 @@ export default async function LandingPage() {
             The thesis
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── EXPERT HINTS ─── */}
-      <section className="mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
+      <AnimatedSection className="relative mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
         <div className="mx-auto max-w-[720px]">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             The moat
@@ -215,10 +239,10 @@ export default async function LandingPage() {
             .
           </HintExample>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── RITUALS ─── */}
-      <section className="bg-bg-tertiary">
+      <AnimatedSection className="relative bg-bg-tertiary">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
           <div className="mx-auto max-w-[800px]">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
@@ -262,10 +286,10 @@ export default async function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── TRUST ─── */}
-      <section className="mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
+      <AnimatedSection className="relative mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-40">
         <div className="mx-auto max-w-[760px]">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             Trust
@@ -290,10 +314,10 @@ export default async function LandingPage() {
             </p>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── FINAL CTA ─── */}
-      <section className="bg-bg-tertiary">
+      <AnimatedSection className="relative bg-bg-tertiary">
         <div className="mx-auto max-w-[1000px] px-6 py-24 text-center md:px-10 md:py-40">
           <h2 className="text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[72px]">
             Start your awareness streak.
@@ -311,7 +335,7 @@ export default async function LandingPage() {
             </Link>
           </div>
         </div>
-      </section>
+      </AnimatedSection>
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-text-primary/10">
