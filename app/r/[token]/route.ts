@@ -35,4 +35,7 @@ export async function GET(
   return response;
 }
 
-export { COOKIE_NAME as REFERRAL_COOKIE };
+// REFERRAL_COOKIE name "vig_ref" is duplicated in the callback route —
+// Next route handlers can't export arbitrary named constants, only the
+// HTTP method exports + config. If you change the cookie name here,
+// change it in app/(auth)/callback/route.ts too.
