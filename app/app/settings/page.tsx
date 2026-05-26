@@ -9,6 +9,7 @@ import {
   ToggleRow,
   WorkspaceSection,
 } from "./settings-client";
+import { ReferralCard } from "@/components/ReferralCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +41,7 @@ export default async function SettingsPage() {
   if (!profile?.active_workspace_id) redirect("/login");
   const workspaceId = profile.active_workspace_id;
 
-  const [archivedRes, plaidItemsRes, workspacesRes, membersRes] =
+  const [archivedRes, plaidItemsRes, workspacesRes, membersRes, invitedCountRes] =
     await Promise.all([
       supabase
         .from("accounts")
@@ -53,19 +54,23 @@ export default async function SettingsPage() {
         .select("id, institution_name, last_sync_at, status")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: true }),
-      // All workspaces the user belongs to — for the switcher
       supabase
         .from("workspace_members")
         .select("workspace_id, role, workspaces!inner(id, name, owner_user_id)")
         .eq("user_id", user.id)
         .not("accepted_at", "is", null),
-      // Members of the active workspace — for the team list
       supabase
         .from("workspace_members")
         .select("id, user_id, invited_email, role, invited_at, accepted_at")
         .eq("workspace_id", workspaceId)
         .order("invited_at", { ascending: true }),
+      // Count of profiles this user has personally invited
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("invited_by_user_id", user.id),
     ]);
+  const invitedCount = invitedCountRes.count ?? 0;
 
   const archived = (archivedRes.data ?? []) as Pick<
     Account,
@@ -279,6 +284,17 @@ export default async function SettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Referral */}
+      {profile.referral_token && (
+        <section className="mb-10">
+          <ReferralCard
+            referralToken={profile.referral_token}
+            invitedCount={invitedCount}
+            siteUrl={process.env.NEXT_PUBLIC_SITE_URL ?? "https://vigilance.revarity.com"}
+          />
+        </section>
+      )}
 
       {/* Account */}
       <section className="mb-12">
