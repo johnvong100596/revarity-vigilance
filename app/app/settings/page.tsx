@@ -227,9 +227,23 @@ export default async function SettingsPage() {
         <SignOutButton />
       </section>
 
-      <p className="text-center text-[11px] leading-relaxed text-text-muted">
-        Vigilance · built by Revarity
-      </p>
+      <footer className="space-y-3 text-center text-[11px] leading-relaxed text-text-muted">
+        <div className="flex justify-center gap-4">
+          <Link href="/privacy" className="hover:text-text-primary">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-text-primary">
+            Terms
+          </Link>
+          <a
+            href="mailto:coo@revarity.com"
+            className="hover:text-text-primary"
+          >
+            Contact
+          </a>
+        </div>
+        <div>Vigilance · built by Revarity</div>
+      </footer>
     </>
   );
 }

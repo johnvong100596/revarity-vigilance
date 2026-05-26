@@ -121,6 +121,15 @@ function LoginForm() {
       {errorMsg && (
         <p className="text-center text-sm text-negative">{errorMsg}</p>
       )}
+
+      <div className="flex justify-center gap-4 text-[11px] text-text-muted">
+        <Link href="/privacy" className="hover:text-text-primary">
+          Privacy
+        </Link>
+        <Link href="/terms" className="hover:text-text-primary">
+          Terms
+        </Link>
+      </div>
     </div>
   );
 }
