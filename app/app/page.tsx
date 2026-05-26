@@ -311,6 +311,26 @@ export default async function HomePage() {
               </div>
             </Link>
           </div>
+
+          <Link
+            href="/app/ask"
+            className="mt-3 flex items-center justify-between rounded-card border border-text-primary/8 bg-bg-tertiary p-4 transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-primary">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div>
+                <div className="text-sm font-medium text-text-primary">
+                  Ask Vigilance
+                </div>
+                <div className="text-[11px] text-text-muted">
+                  Reflect on your numbers in plain English
+                </div>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-text-muted" />
+          </Link>
         </>
       ) : (
         // Empty state
