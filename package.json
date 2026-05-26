@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "render-emails": "tsx scripts/render-emails.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
     "class-variance-authority": "^0.7.1",
@@ -26,6 +29,7 @@
     "react-hook-form": "^7.76.0",
     "react-plaid-link": "^4.1.1",
     "recharts": "^3.8.1",
+    "resend": "^6.12.4",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.4.3",
