@@ -241,7 +241,7 @@ export default async function HomePage() {
             href="/app/accounts/add"
             className="mb-8 flex items-center justify-center gap-1.5 rounded-row border border-dashed border-text-primary/15 px-3 py-2.5 text-xs font-medium text-text-secondary transition hover:border-accent-primary/40 hover:text-accent-primary"
           >
-            <Plus className="h-3.5 w-3.5" /> Add account
+            <Plus className="h-3.5 w-3.5" /> Connect another bank
           </Link>
 
           <div className="grid grid-cols-2 gap-3">
@@ -276,14 +276,14 @@ export default async function HomePage() {
             No accounts yet
           </div>
           <p className="mb-10 max-w-[300px] text-[15px] leading-relaxed text-text-secondary">
-            Add your bank, credit cards, crypto, and investments. The ritual
-            starts with knowing what you have.
+            Connect your bank to add accounts. The ritual starts with knowing
+            what you have.
           </p>
           <Link
             href="/app/accounts/add"
             className="inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Add your first account
+            <Plus className="h-4 w-4" /> Connect your bank
           </Link>
         </section>
       )}

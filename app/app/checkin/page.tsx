@@ -72,7 +72,7 @@ export default async function CheckinPage() {
             href="/app/accounts/add"
             className="inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Add your first account
+            <Plus className="h-4 w-4" /> Connect your bank
           </Link>
         </section>
       </>

@@ -161,7 +161,7 @@ export default async function MonthlyClosePage() {
             href="/app/accounts/add"
             className="inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
           >
-            Add account
+            Connect your bank
           </Link>
         </section>
       ) : (

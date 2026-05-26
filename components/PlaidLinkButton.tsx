@@ -123,8 +123,8 @@ export function PlaidLinkButton() {
         {label}
       </button>
       <p className="mt-2 text-center text-[11px] leading-relaxed text-text-muted">
-        Read-only. Credentials never touch our servers. Sandbox bank: First
-        Platypus, user_good / pass_good.
+        Connect in 30 seconds. Read-only — your sign-in details never touch
+        our servers.
       </p>
       {errorMsg && (
         <p className="mt-3 text-center text-xs text-negative">{errorMsg}</p>

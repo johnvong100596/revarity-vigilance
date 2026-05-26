@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 
-import { AddAccountForm } from "./add-account-form";
 import { PlaidLinkButton } from "@/components/PlaidLinkButton";
 import { createClient } from "@/lib/supabase/server";
-import type { Currency } from "@/lib/money";
 
 export default async function AddAccountPage() {
   const supabase = createClient();
@@ -14,17 +12,9 @@ export default async function AddAccountPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("home_currency")
-    .eq("id", user.id)
-    .single();
-
-  const defaultCurrency = (profile?.home_currency as Currency) ?? "USD";
-
   return (
     <>
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-8 flex items-center justify-between">
         <Link
           href="/app"
           aria-label="Back"
@@ -32,33 +22,48 @@ export default async function AddAccountPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div className="text-[10px] tracking-[0.2em] text-text-secondary">
-          NEW ACCOUNT
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          Add an account
         </div>
-        <div className="w-5" />
+        <div className="w-9" />
       </header>
 
-      <h1 className="mb-8 text-3xl font-bold tracking-[-0.025em] text-text-primary">
-        Add account
+      <h1 className="mb-3 text-3xl font-bold tracking-[-0.025em] text-text-primary">
+        Connect your bank
       </h1>
+      <p className="mb-8 text-[15px] leading-relaxed text-text-secondary">
+        Vigilance pulls your balances automatically using Plaid — the
+        bank-connection service trusted by 12,000+ banks. Read-only access.
+        Your sign-in credentials never touch our servers.
+      </p>
 
-      {/* Plaid auto-connect (sandbox) */}
       <section className="mb-8">
         <PlaidLinkButton />
       </section>
 
-      <div className="relative mb-8">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-text-primary/10" />
+      <div className="rounded-card border border-text-primary/8 bg-bg-tertiary p-4">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary">
+          <Lock className="h-3 w-3" />
+          What we see, what we don&apos;t
         </div>
-        <div className="relative flex justify-center">
-          <span className="bg-bg-primary px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-            Or enter manually
-          </span>
-        </div>
+        <ul className="space-y-1.5 text-xs leading-relaxed text-text-secondary">
+          <li>
+            <span className="text-text-primary">We see:</span> balances,
+            account names, statement dates, and (for credit cards) the yearly
+            interest rate and minimum payment.
+          </li>
+          <li>
+            <span className="text-text-primary">We don&apos;t see:</span> your
+            online banking password, your card number, or who you pay. We
+            can&apos;t move money — connections are read-only.
+          </li>
+          <li>
+            <span className="text-text-primary">You control it:</span> remove
+            the connection anytime from Settings. Past data stays archived for
+            you to recover.
+          </li>
+        </ul>
       </div>
-
-      <AddAccountForm defaultCurrency={defaultCurrency} />
     </>
   );
 }

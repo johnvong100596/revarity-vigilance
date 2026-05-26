@@ -156,7 +156,7 @@ export default async function SettingsPage() {
               href="/app/accounts/add"
               className="text-xs font-medium text-accent-primary underline-offset-4 hover:underline"
             >
-              + Add
+              + Connect another
             </Link>
           )}
         </div>
