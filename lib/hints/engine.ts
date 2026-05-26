@@ -1,7 +1,11 @@
+import { composeHintBody } from "@/lib/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import type { Account, Profile } from "@/lib/types";
 import { HINT_REGISTRY } from "./registry";
 import { SEVERITY_SCORE, type UserContext } from "./types";
+
+/** Per-day-per-user budget for LLM hint composition (Task 2.4 spec). */
+const LLM_HINTS_PER_DAY = 3;
 
 interface RunOptions {
   /** If provided, scope account fetch + insert to this workspace. If
@@ -100,6 +104,41 @@ export async function runHintsEngine(
     }
 
     if (rows.length === 0) return;
+
+    // Compose what we can afford via Claude. Cost cap: 3 LLM-composed
+    // hints per user per rolling 24h, severity-sorted so the most urgent
+    // get the upgrade first.
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: composedToday } = await supabase
+      .from("hints")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("composed_at", yesterday);
+
+    let budget = Math.max(0, LLM_HINTS_PER_DAY - (composedToday ?? 0));
+    if (budget > 0) {
+      const orderedIdxs = rows
+        .map((_, i) => i)
+        .sort((a, b) => rows[b].severity_score - rows[a].severity_score);
+
+      for (const i of orderedIdxs) {
+        if (budget <= 0) break;
+        const composed = await composeHintBody(rows[i].body, {
+          severity: rows[i].category,
+        });
+        if (composed) {
+          rows[i] = {
+            ...rows[i],
+            composed_body: composed,
+            composed_at: new Date().toISOString(),
+          } as (typeof rows)[number] & {
+            composed_body: string;
+            composed_at: string;
+          };
+          budget--;
+        }
+      }
+    }
 
     const { error } = await supabase.from("hints").insert(rows);
     if (error) {

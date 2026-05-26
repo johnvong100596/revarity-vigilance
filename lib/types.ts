@@ -79,11 +79,14 @@ export type HintStatus = "active" | "dismissed" | "acted" | "muted";
 export interface Hint {
   id: string;
   user_id: string;
+  workspace_id: string;
   hint_template_id: string;
   category: HintCategory;
   severity_score: number;
   title: string;
   body: string;
+  composed_body: string | null;
+  composed_at: string | null;
   data_snapshot: unknown;
   related_account_id: string | null;
   action_label: string | null;

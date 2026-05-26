@@ -134,7 +134,7 @@ function HintCard({ hint }: { hint: Hint }) {
             </div>
 
             <div className="text-[15px] leading-relaxed text-text-primary">
-              {hint.body}
+              {hint.composed_body ?? hint.body}
             </div>
 
             {hint.action_target && hint.action_label && (
