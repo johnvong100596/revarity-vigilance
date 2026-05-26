@@ -5,6 +5,7 @@ import {
   plaid,
   refreshLiabilitiesForItem,
 } from "@/lib/plaid";
+import { verifyPlaidWebhook } from "@/lib/plaid-webhook-verify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -36,9 +37,20 @@ interface PlaidWebhookPayload {
 }
 
 export async function POST(req: NextRequest) {
+  // Need the raw body twice: once for SHA-256 verification, once parsed
+  const bodyText = await req.text();
+  const verified = await verifyPlaidWebhook(
+    req.headers.get("plaid-verification"),
+    bodyText
+  );
+  if (!verified) {
+    console.warn("[plaid webhook] rejected: signature verification failed");
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
   let payload: PlaidWebhookPayload;
   try {
-    payload = (await req.json()) as PlaidWebhookPayload;
+    payload = JSON.parse(bodyText) as PlaidWebhookPayload;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
