@@ -15,6 +15,16 @@ export const metadata: Metadata = {
   title: "Vigilance — Watch your money. Or watch it drift.",
   description:
     "A 30-second daily ritual against financial drift. Multi-account check-in, CFO-grade hints, weekly reckoning, monthly close.",
+  // PWA — manifest auto-emits via app/manifest.ts. Apple-specific tags
+  // below activate the home-screen-installable experience on iOS.
+  appleWebApp: {
+    capable: true,
+    title: "Vigilance",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
