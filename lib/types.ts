@@ -68,7 +68,11 @@ export interface Profile {
   capital_waterfall: unknown;
   expert_hints_enabled: boolean;
   decay_warnings_enabled: boolean;
+  weekly_email_enabled: boolean;
+  monthly_email_enabled: boolean;
   active_workspace_id: string;
+  referral_token: string | null;
+  invited_by_user_id: string | null;
   created_at: string;
   updated_at: string;
 }
