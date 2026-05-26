@@ -62,7 +62,7 @@ export default async function HomePage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("profiles")
-      .select("home_currency, awareness_streak")
+      .select("home_currency, awareness_streak, decay_warnings_enabled")
       .eq("id", user.id)
       .single(),
     supabase
@@ -76,7 +76,7 @@ export default async function HomePage() {
   const accounts: Account[] = accountsRes.data ?? [];
   const profile = (profileRes.data ?? null) as Pick<
     Profile,
-    "home_currency" | "awareness_streak"
+    "home_currency" | "awareness_streak" | "decay_warnings_enabled"
   > | null;
   const hints: Hint[] = hintsRes.data ?? [];
   const homeCurrency: Currency = profile?.home_currency ?? "USD";
@@ -104,8 +104,10 @@ export default async function HomePage() {
   // Decay system per THESIS.md §4 — 14+ days since the user touched ANY
   // account triggers the REENGAGE takeover. Replaces the normal home UI;
   // a single ack of any account resolves it on the next page load.
+  // Settings: decay_warnings_enabled gates the takeover (per-row dots stay).
   const decay = getUserDecaySummary(accounts);
-  if (hasAccounts && decay.critical) {
+  const decayEnabled = profile?.decay_warnings_enabled ?? true;
+  if (hasAccounts && decay.critical && decayEnabled) {
     return (
       <ReengageTakeover
         daysAway={decay.daysSinceAnyTouch}

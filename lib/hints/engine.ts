@@ -42,6 +42,9 @@ export async function runHintsEngine(userId: string): Promise<void> {
 
     const profile = profileRes.data as Profile | null;
     if (!profile) return;
+    // Respect the user's preferences toggle — Settings page lets them
+    // skip the engine entirely if they don't want CFO-grade nags.
+    if (profile.expert_hints_enabled === false) return;
     const accounts = (accountsRes.data ?? []) as Account[];
 
     const dedupKeys = new Set(

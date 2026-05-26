@@ -1,8 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Cog } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import {
+  ArchivedAccountRow,
+  PlaidItemCard,
+  SignOutButton,
+  ToggleRow,
+} from "./settings-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { updateProfile } from "@/lib/actions/settings";
+import { CURRENCIES } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
+import type { Account, Profile } from "@/lib/types";
+
+interface PlaidItemRow {
+  id: string;
+  institution_name: string | null;
+  last_sync_at: string | null;
+  status: string;
+}
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -10,6 +29,28 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const [profileRes, archivedRes, plaidItemsRes] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("accounts")
+      .select("id, name, subtitle")
+      .eq("user_id", user.id)
+      .eq("archived", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("plaid_items")
+      .select("id, institution_name, last_sync_at, status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const profile = (profileRes.data ?? null) as Profile | null;
+  const archived = (archivedRes.data ?? []) as Pick<
+    Account,
+    "id" | "name" | "subtitle"
+  >[];
+  const plaidItems = (plaidItemsRes.data ?? []) as PlaidItemRow[];
 
   return (
     <>
@@ -31,19 +72,164 @@ export default async function SettingsPage() {
         Settings
       </h1>
 
-      <section className="mt-12 flex flex-col items-center text-center">
-        <Cog className="h-10 w-10 text-text-muted" />
-        <div className="mt-5 text-sm font-semibold text-text-primary">
-          Coming soon
+      {/* Profile */}
+      <section className="mb-10">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Profile
         </div>
-        <p className="mx-auto mt-3 max-w-[300px] text-xs leading-relaxed text-text-secondary">
-          Currency picker, hint thresholds, jurisdiction list, ritual cadence,
-          archived account restore. Day 3 work.
-        </p>
-        <p className="mx-auto mt-2 max-w-[300px] text-[11px] leading-relaxed text-text-muted">
-          Signed in as {user.email}
-        </p>
+        <form action={updateProfile} className="space-y-4">
+          <div className="space-y-2">
+            <Label
+              htmlFor="displayName"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
+            >
+              Display name
+            </Label>
+            <Input
+              id="displayName"
+              name="displayName"
+              maxLength={64}
+              defaultValue={profile?.display_name ?? ""}
+              placeholder="Your name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="homeCurrency"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
+            >
+              Home currency
+            </Label>
+            <select
+              id="homeCurrency"
+              name="homeCurrency"
+              defaultValue={profile?.home_currency ?? "USD"}
+              className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-tertiary px-3.5 py-2 text-sm text-text-primary focus-visible:border-accent-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/15"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] leading-relaxed text-text-muted">
+              All net-worth totals and ritual screens display in this
+              currency. Multi-currency accounts get FX-converted at snapshot
+              time (Day 6 cron lands the live rate feed).
+            </p>
+          </div>
+          <Button type="submit" className="w-full">
+            Save profile
+          </Button>
+        </form>
       </section>
+
+      {/* Preferences */}
+      <section className="mb-10">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Preferences
+        </div>
+        <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 divide-y divide-text-primary/6">
+          <ToggleRow
+            label="Expert hints"
+            description="Surface CFO-grade insights as you check in. Turn off to skip the hint engine entirely."
+            field="expert_hints_enabled"
+            initial={profile?.expert_hints_enabled ?? true}
+          />
+          <ToggleRow
+            label="Decay re-engage takeover"
+            description="Replace the home screen with a full-screen prompt when you haven't checked in for 14+ days. Per-account warning dots stay on either way."
+            field="decay_warnings_enabled"
+            initial={profile?.decay_warnings_enabled ?? true}
+          />
+        </div>
+      </section>
+
+      {/* Plaid connections */}
+      <section className="mb-10">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+            Connected banks
+          </div>
+          {plaidItems.length > 0 && (
+            <Link
+              href="/app/accounts/add"
+              className="text-xs font-medium text-accent-primary underline-offset-4 hover:underline"
+            >
+              + Add
+            </Link>
+          )}
+        </div>
+        {plaidItems.length === 0 ? (
+          <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-4 text-center">
+            <p className="text-xs leading-relaxed text-text-secondary">
+              No banks connected yet.
+            </p>
+            <Link
+              href="/app/accounts/add"
+              className="mt-3 inline-flex items-center text-xs font-semibold text-accent-primary underline-offset-4 hover:underline"
+            >
+              Connect with Plaid →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {plaidItems.map((item) => (
+              <PlaidItemCard
+                key={item.id}
+                id={item.id}
+                institution={item.institution_name ?? "Unnamed institution"}
+                lastSyncAt={item.last_sync_at}
+                status={item.status}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Archived accounts */}
+      <section className="mb-10">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Archived accounts
+        </div>
+        {archived.length === 0 ? (
+          <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-3 text-xs text-text-secondary">
+            No archived accounts. Archiving from the account detail page brings
+            them here for recovery.
+          </div>
+        ) : (
+          <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 divide-y divide-text-primary/6">
+            {archived.map((a) => (
+              <ArchivedAccountRow
+                key={a.id}
+                id={a.id}
+                name={a.name}
+                subtitle={a.subtitle}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Account */}
+      <section className="mb-12">
+        <div className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+          Account
+        </div>
+        <div className="mb-4 rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+            Signed in as
+          </div>
+          <div className="mt-1 text-sm font-medium text-text-primary">
+            {user.email}
+          </div>
+        </div>
+        <SignOutButton />
+      </section>
+
+      <p className="text-center text-[11px] leading-relaxed text-text-muted">
+        Vigilance · built by Revarity
+      </p>
     </>
   );
 }
