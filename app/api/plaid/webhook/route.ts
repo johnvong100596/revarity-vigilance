@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { plaid } from "@/lib/plaid";
+import { plaid, refreshLiabilitiesForItem } from "@/lib/plaid";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -58,11 +58,18 @@ export async function POST(req: NextRequest) {
     switch (payload.webhook_type) {
       case "TRANSACTIONS":
       case "HOLDINGS":
+        await refreshBalancesFromPlaid({
+          accessToken: item.access_token_encrypted,
+          userId: item.user_id,
+          plaidItemRowId: item.id,
+        });
+        break;
       case "LIABILITIES":
         await refreshBalancesFromPlaid({
           accessToken: item.access_token_encrypted,
           userId: item.user_id,
           plaidItemRowId: item.id,
+          withLiabilities: true,
         });
         break;
       case "ITEM":
@@ -94,10 +101,13 @@ async function refreshBalancesFromPlaid({
   accessToken,
   userId,
   plaidItemRowId,
+  withLiabilities = false,
 }: {
   accessToken: string;
   userId: string;
   plaidItemRowId: string;
+  /** True for LIABILITIES webhook events — also re-fetches debt fields */
+  withLiabilities?: boolean;
 }) {
   const admin = createAdminClient();
   const res = await plaid().accountsGet({ access_token: accessToken });
@@ -105,10 +115,11 @@ async function refreshBalancesFromPlaid({
 
   for (const a of res.data.accounts) {
     const balance = Math.abs(a.balances.current ?? 0);
+    const creditLimit = a.balances.limit ?? null;
 
     const { data: acct } = await admin
       .from("accounts")
-      .select("id, currency")
+      .select("id, currency, category")
       .eq("user_id", userId)
       .eq("plaid_account_id", a.account_id)
       .maybeSingle();
@@ -116,7 +127,11 @@ async function refreshBalancesFromPlaid({
 
     await admin
       .from("accounts")
-      .update({ balance, last_balance_updated_at: now })
+      .update({
+        balance,
+        credit_limit: acct.category === "debt" ? creditLimit : null,
+        last_balance_updated_at: now,
+      })
       .eq("id", acct.id);
 
     await admin.from("balance_snapshots").insert({
@@ -125,6 +140,14 @@ async function refreshBalancesFromPlaid({
       balance,
       balance_home_currency: balance,
       fx_rate: acct.currency === "USD" ? 1 : null,
+    });
+  }
+
+  if (withLiabilities) {
+    await refreshLiabilitiesForItem({
+      accessToken,
+      userId,
+      supabase: admin,
     });
   }
 

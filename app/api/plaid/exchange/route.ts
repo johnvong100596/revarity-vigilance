@@ -6,6 +6,7 @@ import {
   mapPlaidAccountType,
   mapPlaidCategory,
   plaid,
+  refreshLiabilitiesForItem,
 } from "@/lib/plaid";
 import { createClient } from "@/lib/supabase/server";
 
@@ -127,13 +128,24 @@ export async function POST(req: NextRequest) {
     }));
     await supabase.from("balance_snapshots").insert(snapshots);
 
-    // 6. Run hint evaluation now that new accounts exist
+    // 6. Fetch liabilities and back-fill APR / statement close / payment due
+    //    on any debt accounts we just inserted. Best-effort — if the
+    //    institution doesn't support Liabilities, this no-ops silently.
+    const liabilities = await refreshLiabilitiesForItem({
+      accessToken,
+      userId: user.id,
+      supabase,
+    });
+
+    // 7. Run hint evaluation now that new accounts (with full debt fields,
+    //    if available) exist
     await runHintsEngine(user.id);
 
     return NextResponse.json({
       success: true,
       count: insertedAccounts.length,
       institution: institutionName,
+      liabilities,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
