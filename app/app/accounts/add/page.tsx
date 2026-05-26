@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
+import { PlaidLinkButton } from "@/components/PlaidLinkButton";
 import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
 import { CURRENCIES } from "@/lib/money";
@@ -107,6 +108,22 @@ export default async function AddAccountPage() {
       <h1 className="mb-8 text-3xl font-bold tracking-[-0.025em] text-text-primary">
         Add account
       </h1>
+
+      {/* Plaid auto-connect (sandbox) */}
+      <section className="mb-8">
+        <PlaidLinkButton />
+      </section>
+
+      <div className="relative mb-8">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-text-primary/10" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-bg-primary px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+            Or enter manually
+          </span>
+        </div>
+      </div>
 
       <form action={addAccountAction} className="space-y-5">
         <div className="space-y-2">
