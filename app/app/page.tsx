@@ -237,7 +237,7 @@ export default async function HomePage() {
                 <ChevronRight className="h-4 w-4 text-text-muted" />
               </div>
               <div className="text-sm leading-relaxed text-text-primary">
-                {topHint.body}
+                {topHint.composed_body ?? topHint.body}
               </div>
             </Link>
           )}

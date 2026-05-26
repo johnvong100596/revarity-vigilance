@@ -82,7 +82,23 @@ export async function runHintsEngine(
       })
     );
 
-    const rows = [];
+    interface HintInsertRow {
+      user_id: string;
+      workspace_id: string;
+      hint_template_id: string;
+      category: "pay_attention" | "opportunity" | "strategic";
+      severity_score: number;
+      title: string;
+      body: string;
+      composed_body?: string;
+      composed_at?: string;
+      data_snapshot: unknown;
+      related_account_id: string | null;
+      action_label: string | null;
+      action_target: string | null;
+      status: "active";
+    }
+    const rows: HintInsertRow[] = [];
     for (const r of results) {
       if (!r || !r.res.fires) continue;
       const key = dedupKey(r.evaluator.templateId, r.res.relatedAccountId ?? null);
@@ -99,7 +115,7 @@ export async function runHintsEngine(
         related_account_id: r.res.relatedAccountId ?? null,
         action_label: r.res.actionLabel ?? null,
         action_target: r.res.actionTarget ?? null,
-        status: "active" as const,
+        status: "active",
       });
     }
 
@@ -127,14 +143,8 @@ export async function runHintsEngine(
           severity: rows[i].category,
         });
         if (composed) {
-          rows[i] = {
-            ...rows[i],
-            composed_body: composed,
-            composed_at: new Date().toISOString(),
-          } as (typeof rows)[number] & {
-            composed_body: string;
-            composed_at: string;
-          };
+          rows[i].composed_body = composed;
+          rows[i].composed_at = new Date().toISOString();
           budget--;
         }
       }
