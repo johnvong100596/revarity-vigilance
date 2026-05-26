@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
-import { plaid, refreshLiabilitiesForItem } from "@/lib/plaid";
+import {
+  decryptPlaidToken,
+  plaid,
+  refreshLiabilitiesForItem,
+} from "@/lib/plaid";
 import { createClient } from "@/lib/supabase/server";
 
 const SyncInput = z.object({
@@ -44,7 +48,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await plaid().accountsGet({ access_token: item.access_token_encrypted });
+    // access_token_encrypted holds a Vault UUID, not the raw token
+    const accessToken = await decryptPlaidToken(item.access_token_encrypted);
+    const res = await plaid().accountsGet({ access_token: accessToken });
     const now = new Date().toISOString();
     let updated = 0;
 
@@ -85,7 +91,7 @@ export async function POST(req: NextRequest) {
     // Liabilities product — these change rarely but should track over time
     // (e.g., variable-rate APR adjustments, statement-cycle shifts).
     const liabilities = await refreshLiabilitiesForItem({
-      accessToken: item.access_token_encrypted,
+      accessToken,
       userId: user.id,
       supabase,
     });

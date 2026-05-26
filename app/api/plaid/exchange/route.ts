@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
 import {
+  encryptPlaidToken,
   mapPlaidAccountType,
   mapPlaidCategory,
   plaid,
@@ -47,16 +48,18 @@ export async function POST(req: NextRequest) {
     const accessToken = exchange.data.access_token;
     const plaidItemId = exchange.data.item_id;
 
-    // 2. Store the plaid_item row.
-    // SECURITY TODO: encrypt access_token via Supabase Vault before
-    // shipping to production. For sandbox the token is non-sensitive
-    // (no real bank credentials), so plaintext storage is acceptable.
+    // 2. Encrypt the access token via Supabase Vault, then store its UUID
+    //    reference. The plaintext is held in this function's local
+    //    variable for the duration of the request (used below by
+    //    accountsGet + liabilitiesGet) but never persists to the DB.
+    const encryptedRef = await encryptPlaidToken(accessToken, plaidItemId);
+
     const { data: plaidItem, error: itemErr } = await supabase
       .from("plaid_items")
       .insert({
         user_id: user.id,
         plaid_item_id: plaidItemId,
-        access_token_encrypted: accessToken,
+        access_token_encrypted: encryptedRef,
         institution_name: institutionName,
         institution_id: institutionId,
         status: "active",

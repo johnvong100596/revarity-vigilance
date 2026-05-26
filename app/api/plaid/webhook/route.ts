@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { plaid, refreshLiabilitiesForItem } from "@/lib/plaid";
+import {
+  decryptPlaidToken,
+  plaid,
+  refreshLiabilitiesForItem,
+} from "@/lib/plaid";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -57,21 +61,29 @@ export async function POST(req: NextRequest) {
   try {
     switch (payload.webhook_type) {
       case "TRANSACTIONS":
-      case "HOLDINGS":
+      case "HOLDINGS": {
+        const accessToken = await decryptPlaidToken(
+          item.access_token_encrypted
+        );
         await refreshBalancesFromPlaid({
-          accessToken: item.access_token_encrypted,
+          accessToken,
           userId: item.user_id,
           plaidItemRowId: item.id,
         });
         break;
-      case "LIABILITIES":
+      }
+      case "LIABILITIES": {
+        const accessToken = await decryptPlaidToken(
+          item.access_token_encrypted
+        );
         await refreshBalancesFromPlaid({
-          accessToken: item.access_token_encrypted,
+          accessToken,
           userId: item.user_id,
           plaidItemRowId: item.id,
           withLiabilities: true,
         });
         break;
+      }
       case "ITEM":
         if (payload.webhook_code === "ERROR") {
           await admin

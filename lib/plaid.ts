@@ -7,28 +7,114 @@ import {
 } from "plaid";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Server-side Plaid client. Reads PLAID_CLIENT_ID + PLAID_SECRET from env. */
-function buildClient(): PlaidApi {
-  const env = (process.env.PLAID_ENV ?? "sandbox") as keyof typeof PlaidEnvironments;
-  if (!(env in PlaidEnvironments)) {
-    throw new Error(`Unknown PLAID_ENV: ${env}`);
+import { createAdminClient } from "@/lib/supabase/admin";
+
+/**
+ * Environment selection — Plaid production access was approved 2026-05-26.
+ *
+ * Priority order:
+ *   1. PLAID_ENV explicit override (used locally for testing prod against
+ *      sandbox or vice versa)
+ *   2. VERCEL_ENV === "production" → Plaid production
+ *   3. anything else (preview deploys, local dev) → Plaid sandbox
+ *
+ * This means a preview deployment NEVER accidentally uses production
+ * credentials, even if PLAID_CLIENT_ID_PROD is set in the env.
+ */
+export function getPlaidEnvironment(): "sandbox" | "production" | "development" {
+  const explicit = process.env.PLAID_ENV;
+  if (explicit === "production") return "production";
+  if (explicit === "sandbox") return "sandbox";
+  if (explicit === "development") return "development";
+  if (process.env.VERCEL_ENV === "production") return "production";
+  return "sandbox";
+}
+
+function getPlaidCreds(): { clientId: string; secret: string } {
+  if (getPlaidEnvironment() === "production") {
+    const clientId = process.env.PLAID_CLIENT_ID_PROD;
+    const secret = process.env.PLAID_SECRET_PROD;
+    if (!clientId || !secret) {
+      throw new Error(
+        "Plaid production mode requires PLAID_CLIENT_ID_PROD and PLAID_SECRET_PROD env vars"
+      );
+    }
+    return { clientId, secret };
   }
+  return {
+    clientId: process.env.PLAID_CLIENT_ID!,
+    secret: process.env.PLAID_SECRET!,
+  };
+}
+
+function buildClient(): PlaidApi {
+  const env = getPlaidEnvironment();
+  const { clientId, secret } = getPlaidCreds();
   const config = new Configuration({
     basePath: PlaidEnvironments[env],
     baseOptions: {
       headers: {
-        "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID,
-        "PLAID-SECRET": process.env.PLAID_SECRET,
+        "PLAID-CLIENT-ID": clientId,
+        "PLAID-SECRET": secret,
       },
     },
   });
   return new PlaidApi(config);
 }
 
+// Cache invalidates per-process — Vercel functions get fresh instances
+// when env changes (which happens on redeploy).
 let cached: PlaidApi | null = null;
 export function plaid(): PlaidApi {
   if (!cached) cached = buildClient();
   return cached;
+}
+
+/* ── Vault encryption for access tokens ────────────────────────── */
+
+/**
+ * Encrypts a Plaid access token via Supabase Vault. Returns the UUID
+ * reference that we store in plaid_items.access_token_encrypted.
+ *
+ * The plaintext token never leaves Postgres — pgsodium-backed encryption
+ * key is managed by Supabase. App server only sees the UUID after this
+ * call returns.
+ *
+ * ARCHITECTURE.md §5: "access_token NEVER leaves server. Encrypted at
+ * rest via Supabase Vault."
+ */
+export async function encryptPlaidToken(
+  accessToken: string,
+  plaidItemId: string
+): Promise<string> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("vault_create_secret", {
+    secret: accessToken,
+    secret_name: `plaid_token_${plaidItemId}_${Date.now()}`,
+  });
+  if (error || !data) {
+    throw new Error(
+      `Vault encryption failed: ${error?.message ?? "no UUID returned"}`
+    );
+  }
+  return data as string;
+}
+
+/**
+ * Decrypts a Plaid access token by UUID reference. Called from server-side
+ * routes (sync, webhook) right before invoking the Plaid SDK.
+ */
+export async function decryptPlaidToken(secretUuid: string): Promise<string> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("vault_get_secret", {
+    secret_id: secretUuid,
+  });
+  if (error || data == null) {
+    throw new Error(
+      `Vault decryption failed: ${error?.message ?? "no plaintext returned"}`
+    );
+  }
+  return data as string;
 }
 
 /** Products requested when creating Link tokens. Liabilities + investments
