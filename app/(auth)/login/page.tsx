@@ -35,20 +35,8 @@ function LoginForm() {
     setStatus("sent");
   }
 
-  async function signInWithGoogle() {
-    setErrorMsg(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-    if (error) setErrorMsg(error.message);
-  }
-
   return (
-    <div className="w-full max-w-[400px] space-y-10">
+    <div className="w-full max-w-[400px] space-y-8">
       <header className="space-y-3 text-center">
         <Link
           href="/"
@@ -60,7 +48,7 @@ function LoginForm() {
           Welcome
         </h1>
         <p className="text-sm text-text-secondary">
-          We&apos;ll email you a magic link. No password needed.
+          We&apos;ll email you a link to sign in. No password to remember.
         </p>
       </header>
 
@@ -88,7 +76,7 @@ function LoginForm() {
           disabled={status === "sending" || !email}
           className="w-full"
         >
-          {status === "sending" ? "Sending…" : "Send magic link"}
+          {status === "sending" ? "Sending…" : "Email me a link"}
         </Button>
         {status === "sent" && (
           <p className="text-center text-sm text-positive">
@@ -97,26 +85,17 @@ function LoginForm() {
         )}
       </form>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-text-primary/10" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-bg-primary px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-            or
-          </span>
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        onClick={signInWithGoogle}
-        variant="outline"
-        size="lg"
-        className="w-full"
-      >
-        Continue with Google
-      </Button>
+      <p className="text-center text-[11px] leading-relaxed text-text-muted">
+        Link not arriving? It expires after 1 hour, check your spam folder,
+        and email{" "}
+        <a
+          href="mailto:coo@revarity.com"
+          className="text-text-secondary underline-offset-4 hover:underline"
+        >
+          coo@revarity.com
+        </a>{" "}
+        if it keeps failing.
+      </p>
 
       {errorMsg && (
         <p className="text-center text-sm text-negative">{errorMsg}</p>
