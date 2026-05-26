@@ -194,10 +194,22 @@ export default async function SettingsPage() {
             initial={profile?.expert_hints_enabled ?? true}
           />
           <ToggleRow
-            label="Decay re-engage takeover"
-            description="Replace the home screen with a full-screen prompt when you haven't checked in for 14+ days. Per-account warning dots stay on either way."
+            label="Re-engage prompt"
+            description="Replace the home with a full-screen nudge when you've gone 14+ days without checking in. The small amber dots on stale accounts stay on either way."
             field="decay_warnings_enabled"
             initial={profile?.decay_warnings_enabled ?? true}
+          />
+          <ToggleRow
+            label="Sunday Reckoning email"
+            description="Short weekly email Sunday morning with your week's net-worth change and top hints. Links straight into your Reckoning."
+            field="weekly_email_enabled"
+            initial={(profile as { weekly_email_enabled?: boolean })?.weekly_email_enabled ?? true}
+          />
+          <ToggleRow
+            label="Monthly Close email"
+            description="Short email on the 1st of each month with your month-over-month change. Links into the Monthly Close to lock the month."
+            field="monthly_email_enabled"
+            initial={(profile as { monthly_email_enabled?: boolean })?.monthly_email_enabled ?? true}
           />
         </div>
       </section>

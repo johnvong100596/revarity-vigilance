@@ -48,12 +48,23 @@ export async function updateProfile(formData: FormData) {
 /* ── Toggle flags ────────────────────────────────────────────── */
 
 const ToggleInput = z.object({
-  field: z.enum(["expert_hints_enabled", "decay_warnings_enabled"]),
+  field: z.enum([
+    "expert_hints_enabled",
+    "decay_warnings_enabled",
+    "weekly_email_enabled",
+    "monthly_email_enabled",
+  ]),
   value: z.boolean(),
 });
 
+export type ProfileFlag =
+  | "expert_hints_enabled"
+  | "decay_warnings_enabled"
+  | "weekly_email_enabled"
+  | "monthly_email_enabled";
+
 export async function toggleProfileFlag(input: {
-  field: "expert_hints_enabled" | "decay_warnings_enabled";
+  field: ProfileFlag;
   value: boolean;
 }) {
   const { field, value } = ToggleInput.parse(input);

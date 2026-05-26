@@ -23,7 +23,11 @@ import type { WorkspaceRole } from "@/lib/types";
 interface ToggleRowProps {
   label: string;
   description?: string;
-  field: "expert_hints_enabled" | "decay_warnings_enabled";
+  field:
+    | "expert_hints_enabled"
+    | "decay_warnings_enabled"
+    | "weekly_email_enabled"
+    | "monthly_email_enabled";
   initial: boolean;
 }
 
