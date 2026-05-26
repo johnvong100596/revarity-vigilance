@@ -234,6 +234,10 @@ export function SignOutButton() {
   function handleClick() {
     startTransition(async () => {
       const supabase = createClient();
+      // signOut() invalidates the session via Supabase Auth API AND clears
+      // the cookie via @supabase/ssr — both client and server side are
+      // cleared in one call. router.refresh() forces a server re-render
+      // against the now-empty session, so the middleware bounces back to /.
       await supabase.auth.signOut();
       router.push("/");
       router.refresh();
@@ -245,7 +249,7 @@ export function SignOutButton() {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="w-full rounded-full border border-negative/30 bg-bg-tertiary py-3 text-sm font-semibold text-negative transition hover:bg-negative/5 disabled:opacity-50"
+      className="text-sm font-semibold text-negative underline-offset-4 transition hover:underline disabled:opacity-50"
     >
       {pending ? "Signing out…" : "Sign out"}
     </button>
