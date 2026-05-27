@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 const UpdateProfileInput = z.object({
   displayName: z.string().max(64),
   homeCurrency: z.enum(["USD", "CAD", "EUR", "PYG"]),
+  timezone: z.string().min(1).max(64),
 });
 
 export async function updateProfile(formData: FormData) {
@@ -22,6 +23,7 @@ export async function updateProfile(formData: FormData) {
   const parsed = UpdateProfileInput.safeParse({
     displayName: String(formData.get("displayName") ?? "").trim(),
     homeCurrency: formData.get("homeCurrency"),
+    timezone: String(formData.get("timezone") ?? "America/New_York"),
   });
   if (!parsed.success) {
     throw new Error(
@@ -34,6 +36,7 @@ export async function updateProfile(formData: FormData) {
     .update({
       display_name: parsed.data.displayName || null,
       home_currency: parsed.data.homeCurrency,
+      timezone: parsed.data.timezone,
     })
     .eq("id", user.id);
   if (error) throw new Error(`profile update failed: ${error.message}`);

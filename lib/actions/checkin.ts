@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
 import { createClient } from "@/lib/supabase/server";
+import { addDaysISO, DEFAULT_TIMEZONE, localDateISO } from "@/lib/time";
 
 const SeverityScore = {
   pay_attention: 100,
@@ -12,14 +13,21 @@ const SeverityScore = {
   strategic: 40,
 } as const;
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function yesterdayISO(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
+/**
+ * Resolve the signed-in user's timezone (H5). Streak day boundaries must
+ * roll over at the user's local midnight — a Toronto user checking in at
+ * 9pm ET shouldn't be recorded against the next UTC day.
+ */
+async function getUserTimezone(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<string> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", userId)
+    .single();
+  return (data?.timezone as string) || DEFAULT_TIMEZONE;
 }
 
 /**
@@ -29,11 +37,20 @@ function yesterdayISO(): string {
  */
 async function maybeCompleteDay(userId: string) {
   const supabase = createClient();
-  const today = todayISO();
 
   // Active accounts is workspace-scoped via RLS (the SELECT policy filters
   // to accounts in workspaces the user belongs to) — no user_id eq needed
-  const [{ count: activeAccountsCount }, { count: checkedInCount }, { data: profile }] =
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("awareness_streak, best_streak, last_checkin_date, timezone")
+    .eq("id", userId)
+    .single();
+  if (!profile) return;
+
+  const tz = (profile.timezone as string) || DEFAULT_TIMEZONE;
+  const today = localDateISO(tz);
+
+  const [{ count: activeAccountsCount }, { count: checkedInCount }] =
     await Promise.all([
       supabase
         .from("accounts")
@@ -44,19 +61,13 @@ async function maybeCompleteDay(userId: string) {
         .select("account_id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("checkin_date", today),
-      supabase
-        .from("profiles")
-        .select("awareness_streak, best_streak, last_checkin_date")
-        .eq("id", userId)
-        .single(),
     ]);
 
-  if (!profile) return;
   if (profile.last_checkin_date === today) return;
   if (!activeAccountsCount || !checkedInCount) return;
   if (checkedInCount < activeAccountsCount) return;
 
-  const yesterday = yesterdayISO();
+  const yesterday = addDaysISO(today, -1);
   const continuingStreak = profile.last_checkin_date === yesterday;
   const newStreak = continuingStreak ? profile.awareness_streak + 1 : 1;
   const newBest = Math.max(profile.best_streak ?? 0, newStreak);
@@ -83,7 +94,7 @@ export async function acknowledgeAccount(input: { accountId: string }) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const today = todayISO();
+  const today = localDateISO(await getUserTimezone(supabase, user.id));
 
   // upsert by the unique (user_id, account_id, checkin_date) constraint
   const { error } = await supabase.from("check_ins").upsert(
@@ -121,7 +132,7 @@ export async function flagAccount(input: { accountId: string; note: string }) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const today = todayISO();
+  const today = localDateISO(await getUserTimezone(supabase, user.id));
 
   // Get account name + workspace for the hint insert (hints.workspace_id is NOT NULL)
   const { data: account } = await supabase
@@ -179,7 +190,7 @@ export async function editAccountBalance(input: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const today = todayISO();
+  const today = localDateISO(await getUserTimezone(supabase, user.id));
 
   const { data: account } = await supabase
     .from("accounts")

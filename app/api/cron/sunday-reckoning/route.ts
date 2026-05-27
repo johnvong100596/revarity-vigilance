@@ -10,6 +10,7 @@ import {
   type RawSnapshot,
 } from "@/lib/rituals";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_TIMEZONE, daysBetweenISO, localDateISO } from "@/lib/time";
 import type { Account, Hint } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
   const { data: profiles } = await admin
     .from("profiles")
     .select(
-      "id, display_name, home_currency, active_workspace_id, awareness_streak, last_checkin_date"
+      "id, display_name, home_currency, active_workspace_id, awareness_streak, last_checkin_date, timezone"
     )
     .eq("weekly_email_enabled", true);
 
@@ -81,13 +82,18 @@ export async function POST(req: NextRequest) {
 
       // Skip if user is in re-engagement territory (14+ days no touch).
       // They'll get a different email — not the weekly happy path.
-      const last = p.last_checkin_date ? new Date(p.last_checkin_date) : null;
-      if (
-        last &&
-        (Date.now() - last.getTime()) / (24 * 60 * 60 * 1000) >= 14
-      ) {
-        skipped++;
-        continue;
+      // Calendar-day diff in the user's own timezone (H5) so the boundary
+      // is their local midnight, not UTC's.
+      if (p.last_checkin_date) {
+        const tz = (p.timezone as string) || DEFAULT_TIMEZONE;
+        const idleDays = daysBetweenISO(
+          p.last_checkin_date as string,
+          localDateISO(tz)
+        );
+        if (idleDays >= 14) {
+          skipped++;
+          continue;
+        }
       }
 
       const [accountsRes, snapshotsRes, hintsRes] = await Promise.all([

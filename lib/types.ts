@@ -62,6 +62,7 @@ export interface Profile {
   display_name: string | null;
   role_context: string | null;
   home_currency: Currency;
+  timezone: string;
   jurisdictions: string[];
   awareness_streak: number;
   best_streak: number;

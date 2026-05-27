@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/settings";
 import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
 import { CURRENCIES } from "@/lib/money";
+import { TIMEZONE_OPTIONS } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
 import type { Account, Profile, WorkspaceMember } from "@/lib/types";
 
@@ -182,6 +183,30 @@ export default async function SettingsPage() {
               All net-worth totals and ritual screens display in this
               currency. Multi-currency accounts get FX-converted at snapshot
               time (Day 6 cron lands the live rate feed).
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label
+              htmlFor="timezone"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
+            >
+              Time zone
+            </Label>
+            <select
+              id="timezone"
+              name="timezone"
+              defaultValue={profile?.timezone ?? "America/New_York"}
+              className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-tertiary px-3.5 py-2 text-sm text-text-primary focus-visible:border-accent-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/15"
+            >
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <option key={tz.value} value={tz.value}>
+                  {tz.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] leading-relaxed text-text-muted">
+              Your daily streak rolls over at midnight in this time zone, so
+              an evening check-in still counts for today.
             </p>
           </div>
           <Button type="submit" className="w-full">
