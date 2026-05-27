@@ -201,13 +201,29 @@ export default function TermsPage() {
         </Section>
       </div>
 
-      <footer className="mt-16 border-t border-text-primary/10 pt-8">
-        <Link
-          href="/privacy"
-          className="text-sm font-medium text-accent-primary underline-offset-4 hover:underline"
-        >
-          Read Privacy →
-        </Link>
+      <footer className="mt-16 space-y-3 border-t border-text-primary/10 pt-8 text-[13px] text-text-muted">
+        <div className="flex flex-wrap gap-4">
+          <Link href="/privacy" className="hover:text-text-primary">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-text-primary">
+            Terms
+          </Link>
+          <a href="mailto:coo@revarity.com" className="hover:text-text-primary">
+            coo@revarity.com
+          </a>
+        </div>
+        <div>
+          Built by{" "}
+          <a
+            href="https://revarity.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text-primary"
+          >
+            Revarity LLC
+          </a>
+        </div>
       </footer>
     </main>
   );

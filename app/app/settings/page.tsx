@@ -375,7 +375,17 @@ export default async function SettingsPage() {
             Contact
           </a>
         </div>
-        <div>Vigilance · built by Revarity</div>
+        <div>
+          Vigilance · built by{" "}
+          <a
+            href="https://revarity.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text-primary"
+          >
+            Revarity LLC
+          </a>
+        </div>
       </footer>
     </>
   );

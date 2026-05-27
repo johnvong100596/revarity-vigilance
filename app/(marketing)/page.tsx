@@ -365,7 +365,17 @@ export default async function LandingPage() {
             <Link href="/terms" className="transition hover:text-text-primary">
               Terms
             </Link>
-            <span className="text-text-muted">Built by Revarity</span>
+            <span className="text-text-muted">
+              Built by{" "}
+              <a
+                href="https://revarity.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-text-primary"
+              >
+                Revarity LLC
+              </a>
+            </span>
           </div>
         </div>
       </footer>

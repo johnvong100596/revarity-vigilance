@@ -31,10 +31,10 @@ export default function PrivacyPage() {
         <Section title="The short version">
           <p>
             Vigilance shows you your own money. We pull balances from your
-            banks (with your permission, through Plaid), store them in your
-            own Supabase project, and surface insights to help you pay
-            attention. We don&apos;t sell, share, or analyze your data for
-            anyone but you.
+            banks (with your permission, through Plaid), store them
+            row-isolated in our database, and surface insights to help you
+            pay attention. We don&apos;t sell, share, or analyze your data
+            for anyone but you.
           </p>
         </Section>
 
@@ -208,13 +208,29 @@ export default function PrivacyPage() {
         </Section>
       </div>
 
-      <footer className="mt-16 border-t border-text-primary/10 pt-8">
-        <Link
-          href="/terms"
-          className="text-sm font-medium text-accent-primary underline-offset-4 hover:underline"
-        >
-          Read Terms →
-        </Link>
+      <footer className="mt-16 space-y-3 border-t border-text-primary/10 pt-8 text-[13px] text-text-muted">
+        <div className="flex flex-wrap gap-4">
+          <Link href="/privacy" className="hover:text-text-primary">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-text-primary">
+            Terms
+          </Link>
+          <a href="mailto:coo@revarity.com" className="hover:text-text-primary">
+            coo@revarity.com
+          </a>
+        </div>
+        <div>
+          Built by{" "}
+          <a
+            href="https://revarity.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-text-primary"
+          >
+            Revarity LLC
+          </a>
+        </div>
       </footer>
     </main>
   );
