@@ -163,9 +163,11 @@ export default async function HomePage() {
   }, toDecimal(0));
 
   // Week-over-week net worth change (Task 3.3). Baseline = latest snapshot
-  // per account on/before 7 days ago; fall back to current balance for
-  // accounts with no older snapshot. Only show when we actually have a
-  // baseline AND the change is non-trivial (keeps the UI clean).
+  // per account on/before 7 days ago. M4: only show this when EVERY active
+  // account has a ≥7-day-old snapshot — otherwise the whole-portfolio delta
+  // isn't real (a newly-connected account has no baseline, so its full
+  // balance would masquerade as a week's change). When any baseline is
+  // missing we hide the figure rather than blend current balances in.
   const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weekAgoBalById = new Map<string, number>();
   for (const s of snapshots90d) {
@@ -173,14 +175,16 @@ export default async function HomePage() {
       weekAgoBalById.set(s.account_id, Number(s.balance)); // ascending → last wins
     }
   }
-  let haveWeekBaseline = false;
+  const everyAccountHasBaseline =
+    accounts.length > 0 && accounts.every((a) => weekAgoBalById.has(a.id));
   let weekAgoNet = 0;
-  for (const a of accounts) {
-    if (weekAgoBalById.has(a.id)) haveWeekBaseline = true;
-    const bal = weekAgoBalById.get(a.id) ?? Number(a.balance);
-    weekAgoNet += bal * (a.category === "asset" ? 1 : -1);
+  if (everyAccountHasBaseline) {
+    for (const a of accounts) {
+      const bal = weekAgoBalById.get(a.id) as number;
+      weekAgoNet += bal * (a.category === "asset" ? 1 : -1);
+    }
   }
-  const weekChange = haveWeekBaseline
+  const weekChange = everyAccountHasBaseline
     ? netWorth.minus(toDecimal(weekAgoNet)).toNumber()
     : null;
   const showWeekChange = weekChange !== null && Math.abs(weekChange) >= 0.01;
