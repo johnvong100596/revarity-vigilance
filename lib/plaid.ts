@@ -125,10 +125,11 @@ export const LINK_PRODUCTS: Products[] = [
   Products.Investments,
 ];
 
-export const LINK_COUNTRY_CODES: CountryCode[] = [
-  CountryCode.Us,
-  CountryCode.Ca,
-];
+// Canada stays OUT until Plaid grants Production country access (call
+// scheduled 2026-05-27 1pm PST). Sending CountryCode.Ca before the
+// account is approved causes the returning-user phone flow to reject
+// Canadian +1 numbers. Re-add CountryCode.Ca here after approval.
+export const LINK_COUNTRY_CODES: CountryCode[] = [CountryCode.Us];
 
 /** Map Plaid's `type` taxonomy to our account_type CHECK enum. */
 export function mapPlaidAccountType(plaidType: string): "bank" | "investment" | "loan" | "cash" {
