@@ -86,25 +86,6 @@ export async function runHintsEngine(
       })
     );
 
-    // L2: some hints are singletons per workspace — only one should be
-    // active regardless of which account it points at (e.g. "your most
-    // expensive debt"). When such a hint fires for a DIFFERENT account
-    // than the currently active one (user paid one card down, another
-    // is now the worst), retire the stale one so they don't pile up.
-    for (const r of results) {
-      if (!r || !r.res.fires) continue;
-      if (!SINGLETON_TEMPLATES.has(r.evaluator.templateId)) continue;
-      const newAccountId = r.res.relatedAccountId ?? null;
-      if (!newAccountId) continue;
-      await supabase
-        .from("hints")
-        .update({ status: "muted" })
-        .eq("workspace_id", workspaceId)
-        .eq("hint_template_id", r.evaluator.templateId)
-        .eq("status", "active")
-        .neq("related_account_id", newAccountId);
-    }
-
     interface HintInsertRow {
       user_id: string;
       workspace_id: string;
@@ -143,6 +124,24 @@ export async function runHintsEngine(
     }
 
     if (rows.length === 0) return;
+
+    // M5: retire the stale singleton ONLY for hints we're actually about to
+    // insert (i.e. that survived dedup), and only for OTHER accounts. Doing
+    // this here — instead of on every evaluation, before dedup — stops the
+    // mute/insert churn that happened when the "worst debt" flipped between
+    // near-equal APRs or when the firing was itself a dedup no-op. (Damping
+    // near-tie flips further with APR hysteresis is a noted follow-up.)
+    for (const row of rows) {
+      if (!SINGLETON_TEMPLATES.has(row.hint_template_id)) continue;
+      if (!row.related_account_id) continue;
+      await supabase
+        .from("hints")
+        .update({ status: "muted" })
+        .eq("workspace_id", workspaceId)
+        .eq("hint_template_id", row.hint_template_id)
+        .eq("status", "active")
+        .neq("related_account_id", row.related_account_id);
+    }
 
     // Compose what we can afford via Claude. Cost cap: 3 LLM-composed
     // hints per user per rolling 24h, severity-sorted so the most urgent
