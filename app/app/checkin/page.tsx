@@ -4,11 +4,8 @@ import { ArrowLeft, Plus } from "lucide-react";
 
 import { CheckinClient } from "./checkin-client";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_TIMEZONE, localDateISO } from "@/lib/time";
 import type { Account } from "@/lib/types";
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default async function CheckinPage() {
   const supabase = createClient();
@@ -17,15 +14,17 @@ export default async function CheckinPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const today = todayISO();
-
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("awareness_streak, last_checkin_date, active_workspace_id")
+    .select("awareness_streak, last_checkin_date, active_workspace_id, timezone")
     .eq("id", user.id)
     .single();
   if (!profileRow?.active_workspace_id) redirect("/login");
   const workspaceId = profileRow.active_workspace_id as string;
+
+  // "Today" in the user's timezone so it matches locally-stored check-ins
+  const tz = (profileRow.timezone as string) || DEFAULT_TIMEZONE;
+  const today = localDateISO(tz);
 
   const [accountsRes, checkinsRes] = await Promise.all([
     supabase

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
-import { fetchAndCacheInstitutionLogo } from "@/lib/institution-logos";
+import { warmLogos } from "@/lib/institution-logos";
 import {
   encryptPlaidToken,
   mapPlaidAccountType,
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
     //    Best-effort — never fail the connection over a missing logo.
     if (institutionId) {
       try {
-        await fetchAndCacheInstitutionLogo(institutionId);
+        await warmLogos([institutionId]);
       } catch (e) {
         console.warn("[plaid/exchange] logo cache failed", e);
       }

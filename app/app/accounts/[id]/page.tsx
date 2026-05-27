@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { AccountDetailClient, type SnapshotPoint } from "./account-detail-client";
 import { BankIcon } from "@/components/BankIcon";
-import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
+import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import { createClient } from "@/lib/supabase/server";
 import type { Account } from "@/lib/types";
 
@@ -42,12 +42,12 @@ export default async function AccountDetailPage({
   const account = accountRes.data as Account | null;
   if (!account) notFound();
 
-  // Institution logo for the header (best-effort)
+  // Institution logo for the header — read cache only (warmed at sync time)
   let logo: InstitutionLogo | null = null;
   if (account.institution_id) {
-    const map = await ensureLogos(supabase, [account.institution_id]).catch(
-      () => ({}) as Record<string, InstitutionLogo>
-    );
+    const map = await getCachedLogosMap(supabase, [
+      account.institution_id,
+    ]).catch(() => ({}) as Record<string, InstitutionLogo>);
     logo = map[account.institution_id] ?? null;
   }
 

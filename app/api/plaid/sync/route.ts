@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
+import { warmLogos } from "@/lib/institution-logos";
 import {
   decryptPlaidToken,
   plaid,
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: item } = await supabase
     .from("plaid_items")
-    .select("id, workspace_id, access_token_encrypted")
+    .select("id, workspace_id, access_token_encrypted, institution_id")
     .eq("id", body.plaid_item_row_id)
     .maybeSingle();
   if (!item) {
@@ -111,6 +112,16 @@ export async function POST(req: NextRequest) {
       .from("plaid_items")
       .update({ last_sync_at: now })
       .eq("id", item.id);
+
+    // Warm the logo cache off the render path (audit H1) — a manual sync
+    // backfills logos for connections made before the bank-icons feature.
+    if (item.institution_id) {
+      try {
+        await warmLogos([item.institution_id as string]);
+      } catch (e) {
+        console.warn("[plaid/sync] logo warm failed", e);
+      }
+    }
 
     await runHintsEngine(user.id, { workspaceId: item.workspace_id });
 

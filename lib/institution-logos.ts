@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CountryCode } from "plaid";
 
-import { plaid, LINK_COUNTRY_CODES } from "@/lib/plaid";
+import { plaid } from "@/lib/plaid";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -16,7 +16,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * admin client so RLS on the cache table only needs a SELECT policy.
  */
 
-const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days for a real logo
+// A row with no logo (Plaid had none, or the fetch failed) retries much
+// sooner — otherwise a transient failure or a not-yet-approved country
+// (H2) would show the letter fallback for a full month.
+const EMPTY_RETRY_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
+
+// Logo metadata is fetched with a broad country set — institutionsGetById
+// just reads public metadata, so including CA here is harmless and avoids
+// caching an empty row for Canadian banks. (Distinct from LINK_COUNTRY_CODES,
+// which gates the actual Link phone flow and stays US-only until approval.)
+const LOGO_COUNTRY_CODES: CountryCode[] = [CountryCode.Us, CountryCode.Ca];
 
 export interface InstitutionLogo {
   institution_id: string;
@@ -25,8 +35,11 @@ export interface InstitutionLogo {
   color_primary: string | null;
 }
 
-function isStale(fetchedAt: string): boolean {
-  return Date.now() - new Date(fetchedAt).getTime() > CACHE_TTL_MS;
+/** A cached row is stale after 30d if it has a logo, or after 2d if it's
+ *  empty (so failed/unavailable fetches retry without a 30-day blackout). */
+function isStaleRow(fetchedAt: string, hasLogo: boolean): boolean {
+  const age = Date.now() - new Date(fetchedAt).getTime();
+  return age > (hasLogo ? CACHE_TTL_MS : EMPTY_RETRY_TTL_MS);
 }
 
 /**
@@ -46,7 +59,10 @@ export async function fetchAndCacheInstitutionLogo(
     .eq("institution_id", institutionId)
     .maybeSingle();
 
-  if (cached && !isStale(cached.fetched_at as string)) {
+  if (
+    cached &&
+    !isStaleRow(cached.fetched_at as string, Boolean(cached.logo_base64))
+  ) {
     return {
       institution_id: cached.institution_id as string,
       name: (cached.name as string | null) ?? null,
@@ -55,15 +71,14 @@ export async function fetchAndCacheInstitutionLogo(
     };
   }
 
-  // Cache miss or stale — ask Plaid. Country codes must cover the
-  // institution's country; we send whatever Link is currently scoped to.
+  // Cache miss or stale — ask Plaid with the broad metadata country set.
   let name: string | null = null;
   let logo: string | null = null;
   let color: string | null = null;
   try {
     const res = await plaid().institutionsGetById({
       institution_id: institutionId,
-      country_codes: LINK_COUNTRY_CODES as CountryCode[],
+      country_codes: LOGO_COUNTRY_CODES,
       options: { include_optional_metadata: true },
     });
     const inst = res.data.institution;
@@ -119,36 +134,31 @@ export async function getCachedLogosMap(
 }
 
 /**
- * Ensure logos exist for the given institution_ids — lazily fetches any
- * that are missing or stale. Best-effort, bounded, swallows errors so it
- * can be awaited from a server component render without risk. Returns the
- * fresh cache map for immediate render.
+ * Warm the logo cache for the given institution_ids — fetches any that are
+ * missing or stale from Plaid. Call this from WRITE paths (exchange, sync),
+ * NEVER from a page render: it makes serial Plaid round-trips and would
+ * block first byte (audit H1). Best-effort; swallows errors.
  */
-export async function ensureLogos(
-  supabase: SupabaseClient,
-  institutionIds: string[]
-): Promise<Record<string, InstitutionLogo>> {
+export async function warmLogos(institutionIds: string[]): Promise<void> {
   const ids = Array.from(new Set(institutionIds.filter(Boolean)));
-  if (ids.length === 0) return {};
+  if (ids.length === 0) return;
 
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("institution_logos")
-    .select("institution_id, fetched_at")
+    .select("institution_id, logo_base64, fetched_at")
     .in("institution_id", ids);
 
   const fresh = new Set(
     (existing ?? [])
-      .filter((r) => !isStale(r.fetched_at as string))
+      .filter((r) =>
+        !isStaleRow(r.fetched_at as string, Boolean(r.logo_base64))
+      )
       .map((r) => r.institution_id as string)
   );
   const missing = ids.filter((id) => !fresh.has(id));
 
-  // Fetch missing ones sequentially (institution counts are tiny — one
-  // per connected bank). Failures cache an empty row and don't throw.
   for (const id of missing) {
     await fetchAndCacheInstitutionLogo(id);
   }
-
-  return getCachedLogosMap(supabase, ids);
 }

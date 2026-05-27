@@ -3,10 +3,15 @@
 import { useState } from "react";
 import { Flame } from "lucide-react";
 
+import { addDaysISO } from "@/lib/time";
+
 interface StreakBadgeProps {
   streak: number;
   /** ISO dates (YYYY-MM-DD) the user checked in on, last ~35 days */
   checkinDates: string[];
+  /** Today's date (YYYY-MM-DD) in the user's timezone — the grid anchors
+   *  here so cells line up with the locally-stored check-in dates. */
+  todayLocal: string;
 }
 
 const DAYS_BACK = 35; // 5 weeks
@@ -16,17 +21,19 @@ const DAYS_BACK = 35; // 5 weeks
  * 5-week dot calendar of the days you checked in. Uses a flame icon
  * (not emoji) to stay on the premium side of the line.
  */
-export function StreakBadge({ streak, checkinDates }: StreakBadgeProps) {
+export function StreakBadge({
+  streak,
+  checkinDates,
+  todayLocal,
+}: StreakBadgeProps) {
   const [open, setOpen] = useState(false);
   const checkedSet = new Set(checkinDates);
 
-  // Build the last 35 calendar days (oldest first) for the grid
-  const today = new Date();
+  // Build the last 35 calendar days (oldest first) for the grid, anchored
+  // on the user's local "today" so cells match the stored local dates.
   const cells: { iso: string; checked: boolean }[] = [];
   for (let i = DAYS_BACK - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = addDaysISO(todayLocal, -i);
     cells.push({ iso, checked: checkedSet.has(iso) });
   }
 

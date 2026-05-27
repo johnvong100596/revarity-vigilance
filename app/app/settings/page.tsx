@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/settings";
-import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
+import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import { CURRENCIES } from "@/lib/money";
 import { TIMEZONE_OPTIONS } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
@@ -87,7 +87,7 @@ export default async function SettingsPage() {
     .filter((id): id is string => Boolean(id));
   const itemLogoMap: Record<string, InstitutionLogo> =
     itemInstitutionIds.length > 0
-      ? await ensureLogos(supabase, itemInstitutionIds).catch(
+      ? await getCachedLogosMap(supabase, itemInstitutionIds).catch(
           () => ({}) as Record<string, InstitutionLogo>
         )
       : {};

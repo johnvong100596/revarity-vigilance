@@ -17,8 +17,9 @@ import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { StreakBadge } from "@/components/StreakBadge";
 import { getUserDecaySummary } from "@/lib/decay";
-import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
+import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
+import { DEFAULT_TIMEZONE, localDateISO } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatBalance,
@@ -61,15 +62,16 @@ export default async function HomePage() {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id")
+    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id, timezone")
     .eq("id", user.id)
     .single();
   const profile = (profileRow ?? null) as Pick<
     Profile,
-    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id"
+    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id" | "timezone"
   > | null;
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
+  const tz = profile?.timezone || DEFAULT_TIMEZONE;
 
   // 90-day balance snapshots feed the projection chart's trend slope
   const ninetyDaysAgo = new Date();
@@ -121,17 +123,16 @@ export default async function HomePage() {
     )
   );
 
-  // Bank icons: resolve institution logos for the accounts on this page.
-  // ensureLogos lazily fetches any missing/stale ones from Plaid (one-time
-  // per institution, then cached 30d) and is best-effort — failures just
-  // fall back to the generic letter icon.
+  // Bank icons: read cached logos only (never fetch from Plaid on render —
+  // warming happens at connect/sync time). Missing logos fall back to the
+  // generic letter icon and fill in after the next sync.
   const institutionIds = accounts
     .map((a) => a.institution_id)
     .filter((id): id is string => Boolean(id));
   let logoMap: Record<string, InstitutionLogo> = {};
   if (institutionIds.length > 0) {
     try {
-      logoMap = await ensureLogos(supabase, institutionIds);
+      logoMap = await getCachedLogosMap(supabase, institutionIds);
     } catch {
       logoMap = {};
     }
@@ -175,9 +176,12 @@ export default async function HomePage() {
     : null;
   const showWeekChange = weekChange !== null && Math.abs(weekChange) >= 0.01;
 
-  const today = new Date().toISOString().slice(0, 10);
+  // "Today" in the user's timezone so day boundaries match check-in storage
+  const today = localDateISO(tz);
   const accountsNeedingCheckin = accounts.filter(
-    (a) => !a.last_acknowledged_at || !a.last_acknowledged_at.startsWith(today)
+    (a) =>
+      !a.last_acknowledged_at ||
+      localDateISO(tz, new Date(a.last_acknowledged_at)) !== today
   ).length;
 
   const hasAccounts = accounts.length > 0;
@@ -256,7 +260,11 @@ export default async function HomePage() {
           </div>
         )}
         <div className="mt-3 flex items-center gap-2 text-xs">
-          <StreakBadge streak={streak} checkinDates={checkinDates} />
+          <StreakBadge
+            streak={streak}
+            checkinDates={checkinDates}
+            todayLocal={today}
+          />
           {hasMixedCurrency && (
             <>
               <span className="text-text-muted">·</span>
