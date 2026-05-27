@@ -5,10 +5,20 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 
+const DISMISS_REASONS = ["not_relevant", "already_addressed", "later"] as const;
+
+const DismissInput = z.object({
+  hintId: z.string().uuid(),
+  reason: z.enum(DISMISS_REASONS).optional(),
+});
+
 const HintIdInput = z.object({ hintId: z.string().uuid() });
 
-export async function dismissHint(input: { hintId: string }) {
-  const { hintId } = HintIdInput.parse(input);
+export async function dismissHint(input: {
+  hintId: string;
+  reason?: (typeof DISMISS_REASONS)[number];
+}) {
+  const { hintId, reason } = DismissInput.parse(input);
   const supabase = createClient();
   const {
     data: { user },
@@ -22,7 +32,7 @@ export async function dismissHint(input: { hintId: string }) {
   // the old user_id eq blocked teammates from dismissing shared hints.
   const { data: existing } = await supabase
     .from("hints")
-    .select("dismissed_count")
+    .select("dismissed_count, workspace_id")
     .eq("id", hintId)
     .single();
 
@@ -38,6 +48,15 @@ export async function dismissHint(input: { hintId: string }) {
     .eq("id", hintId);
   if (error) throw new Error(`dismiss failed: ${error.message}`);
 
+  // Log the dismissal + reason for future targeting (Task 3.1). Best-effort.
+  await supabase.from("hint_events").insert({
+    hint_id: hintId,
+    user_id: user.id,
+    workspace_id: (existing?.workspace_id as string | null) ?? null,
+    event_type: "dismissed",
+    reason: reason ?? null,
+  });
+
   revalidatePath("/app/hints");
   revalidatePath("/app");
 }
@@ -52,6 +71,12 @@ export async function resolveHint(input: { hintId: string }) {
 
   // Workspace-scoped via RLS — drop the user_id filter so workspace
   // teammates can mark hints as acted
+  const { data: existing } = await supabase
+    .from("hints")
+    .select("workspace_id")
+    .eq("id", hintId)
+    .single();
+
   const { error } = await supabase
     .from("hints")
     .update({
@@ -60,6 +85,14 @@ export async function resolveHint(input: { hintId: string }) {
     })
     .eq("id", hintId);
   if (error) throw new Error(`resolve failed: ${error.message}`);
+
+  await supabase.from("hint_events").insert({
+    hint_id: hintId,
+    user_id: user.id,
+    workspace_id: (existing?.workspace_id as string | null) ?? null,
+    event_type: "resolved",
+    reason: null,
+  });
 
   revalidatePath("/app/hints");
   revalidatePath("/app");

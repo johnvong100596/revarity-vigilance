@@ -71,20 +71,28 @@ export function HintsClient({
   );
 }
 
+const DISMISS_REASONS = [
+  { value: "not_relevant" as const, label: "Not relevant to me" },
+  { value: "already_addressed" as const, label: "Already addressed" },
+  { value: "later" as const, label: "Will think about it later" },
+];
+
 function HintCard({ hint }: { hint: Hint }) {
   const [removed, setRemoved] = useState(false);
+  const [askingReason, setAskingReason] = useState(false);
   const [pending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const Icon = CATEGORY_ICON[hint.category];
 
-  function handleDismiss() {
+  function handleDismiss(reason?: (typeof DISMISS_REASONS)[number]["value"]) {
     setRemoved(true);
     startTransition(async () => {
       try {
-        await dismissHint({ hintId: hint.id });
+        await dismissHint({ hintId: hint.id, reason });
       } catch (e) {
         setErrorMsg(e instanceof Error ? e.message : "Failed");
         setRemoved(false);
+        setAskingReason(false);
       }
     });
   }
@@ -160,22 +168,49 @@ function HintCard({ hint }: { hint: Hint }) {
               </div>
             )}
 
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={handleDismiss}
-                disabled={pending}
-                className="flex-1 rounded-full border border-text-primary/15 bg-bg-tertiary py-2.5 text-xs font-semibold text-text-secondary transition hover:bg-bg-secondary disabled:opacity-50"
-              >
-                Dismiss
-              </button>
-              <button
-                onClick={handleResolve}
-                disabled={pending}
-                className="flex-1 rounded-full bg-accent-primary py-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-              >
-                Got it
-              </button>
-            </div>
+            {askingReason ? (
+              <div className="mt-5">
+                <div className="mb-2 text-[11px] font-medium text-text-secondary">
+                  Why are you dismissing this?
+                </div>
+                <div className="space-y-2">
+                  {DISMISS_REASONS.map((r) => (
+                    <button
+                      key={r.value}
+                      onClick={() => handleDismiss(r.value)}
+                      disabled={pending}
+                      className="w-full rounded-row border border-text-primary/12 bg-bg-tertiary px-3 py-2.5 text-left text-xs font-medium text-text-primary transition hover:border-accent-primary/30 hover:bg-bg-secondary disabled:opacity-50"
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handleDismiss(undefined)}
+                    disabled={pending}
+                    className="w-full py-1 text-[11px] text-text-muted underline-offset-4 hover:underline disabled:opacity-50"
+                  >
+                    Just dismiss
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => setAskingReason(true)}
+                  disabled={pending}
+                  className="flex-1 rounded-full border border-text-primary/15 bg-bg-tertiary py-2.5 text-xs font-semibold text-text-secondary transition hover:bg-bg-secondary disabled:opacity-50"
+                >
+                  Dismiss
+                </button>
+                <button
+                  onClick={handleResolve}
+                  disabled={pending}
+                  className="flex-1 rounded-full bg-accent-primary py-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  Got it
+                </button>
+              </div>
+            )}
             {errorMsg && (
               <p className="mt-2 text-center text-xs text-negative">
                 {errorMsg}
