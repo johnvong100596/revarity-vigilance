@@ -129,14 +129,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 5. Seed an initial balance_snapshot for each
+    // 5. Seed an initial balance_snapshot for each. fx_rate=1 only when the
+    //    account currency matches the user's home currency (was hardcoded
+    //    to USD, breaking CAD/EUR home-currency users).
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("home_currency")
+      .eq("id", user.id)
+      .single();
+    const homeCurrency = (profile?.home_currency as string) ?? "USD";
+
     const snapshots = insertedAccounts.map((acct) => ({
       user_id: user.id,
       workspace_id: workspaceId,
       account_id: acct.id,
       balance: acct.balance,
       balance_home_currency: acct.balance,
-      fx_rate: acct.currency === "USD" ? 1 : null,
+      fx_rate: acct.currency === homeCurrency ? 1 : null,
     }));
     await supabase.from("balance_snapshots").insert(snapshots);
 

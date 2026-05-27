@@ -46,6 +46,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
 
+  // Home currency drives the fx_rate=1 decision (was hardcoded to USD)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("home_currency")
+    .eq("id", user.id)
+    .single();
+  const homeCurrency = (profile?.home_currency as string) ?? "USD";
+
   try {
     // access_token_encrypted holds a Vault UUID, not the raw token
     const accessToken = await decryptPlaidToken(item.access_token_encrypted);
@@ -57,10 +65,13 @@ export async function POST(req: NextRequest) {
       const balance = Math.abs(a.balances.current ?? 0);
       const creditLimit = a.balances.limit ?? null;
 
+      // Scope by item + workspace + plaid_account (H9 — Plaid account_ids
+      // are not globally unique)
       const { data: acct } = await supabase
         .from("accounts")
         .select("id, currency, category, workspace_id")
         .eq("workspace_id", item.workspace_id)
+        .eq("plaid_item_id", item.id)
         .eq("plaid_account_id", a.account_id)
         .maybeSingle();
       if (!acct) continue;
@@ -82,7 +93,7 @@ export async function POST(req: NextRequest) {
         account_id: acct.id,
         balance,
         balance_home_currency: balance,
-        fx_rate: acct.currency === "USD" ? 1 : null,
+        fx_rate: acct.currency === homeCurrency ? 1 : null,
       });
       updated++;
     }
