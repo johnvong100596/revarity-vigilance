@@ -1,3 +1,4 @@
+import { isAprVerified } from "@/lib/apr";
 import { formatBalance, type Currency } from "@/lib/money";
 import type { HintEvaluator } from "./types";
 
@@ -15,8 +16,10 @@ export const H001: HintEvaluator = {
   severity: "pay_attention",
   title: "Debt prioritization",
   eval(ctx) {
+    // Only consider debts with a VERIFIED APR (M6) — firing on garbage
+    // data like a 999% typo would undermine the hint's credibility.
     const debts = ctx.accounts.filter(
-      (a) => a.category === "debt" && a.apr !== null && Number(a.apr) > 0
+      (a) => a.category === "debt" && isAprVerified(a.apr, a)
     );
     if (debts.length === 0) return { fires: false };
 

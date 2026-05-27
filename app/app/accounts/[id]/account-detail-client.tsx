@@ -18,6 +18,7 @@ import {
   updateAccountBalance,
   updateAccountDebtDetails,
 } from "@/lib/actions/accounts";
+import { isAprVerified } from "@/lib/apr";
 import { formatBalance, type Currency } from "@/lib/money";
 import type { Account } from "@/lib/types";
 
@@ -438,7 +439,8 @@ function DebtDetailsSection({ account }: { account: Account }) {
               <DetailRow
                 label="Yearly interest"
                 value={`${Number(account.apr).toFixed(2)}%`}
-                hint="What banks call APR — the % you pay on a year's balance"
+                hint="The percentage you pay on a year's balance"
+                unverified={!isAprVerified(Number(account.apr), account)}
               />
             )}
             {account.credit_limit != null && (
@@ -522,10 +524,12 @@ function DetailRow({
   label,
   value,
   hint,
+  unverified,
 }: {
   label: string;
   value: string;
   hint?: string;
+  unverified?: boolean;
 }) {
   return (
     <div className="flex items-baseline justify-between px-4 py-3">
@@ -535,8 +539,16 @@ function DetailRow({
       >
         {label}
       </dt>
-      <dd className="text-sm font-medium tabular-nums text-text-primary">
+      <dd className="flex items-center gap-1.5 text-sm font-medium tabular-nums text-text-primary">
         {value}
+        {unverified && (
+          <span
+            title="This rate looks unusual, so we couldn't confirm it. Tap Edit to set the right number."
+            className="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-decay-warning/15 text-[10px] font-bold text-decay-warning"
+          >
+            ?
+          </span>
+        )}
       </dd>
     </div>
   );

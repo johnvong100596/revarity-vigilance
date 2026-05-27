@@ -177,6 +177,22 @@ export interface LiabilitiesRefreshResult {
  * Accepts ANY Supabase client (cookie-auth from server.ts OR service-role
  * from admin.ts) — caller passes whichever they have access to.
  */
+// M6: log (don't drop) APRs Plaid returns that fall outside plausible
+// bounds. The raw value is still stored; the UI flags it as unverified.
+function warnIfImplausibleApr(
+  apr: number | null,
+  kind: "credit" | "mortgage" | "student",
+  accountId: string
+): void {
+  if (apr == null) return;
+  const ceiling = kind === "credit" ? 60 : 25;
+  if (apr <= 0 || apr > ceiling) {
+    console.warn(
+      `[plaid] implausible ${kind} APR ${apr}% for account ${accountId} (expected 0 < apr <= ${ceiling}); storing raw, flagged unverified`
+    );
+  }
+}
+
 export async function refreshLiabilitiesForItem(opts: {
   accessToken: string;
   userId: string;
@@ -206,6 +222,7 @@ export async function refreshLiabilitiesForItem(opts: {
         const paymentDueDay = c.next_payment_due_date
           ? new Date(c.next_payment_due_date).getUTCDate()
           : null;
+        warnIfImplausibleApr(purchaseApr, "credit", c.account_id);
 
         const { error } = await opts.supabase
           .from("accounts")
@@ -227,6 +244,7 @@ export async function refreshLiabilitiesForItem(opts: {
           ? new Date(m.next_payment_due_date).getUTCDate()
           : null;
         const apr = m.interest_rate?.percentage ?? null;
+        warnIfImplausibleApr(apr, "mortgage", m.account_id ?? "");
 
         const { error } = await opts.supabase
           .from("accounts")
@@ -247,6 +265,7 @@ export async function refreshLiabilitiesForItem(opts: {
           ? new Date(s.next_payment_due_date).getUTCDate()
           : null;
         const apr = s.interest_rate_percentage ?? null;
+        warnIfImplausibleApr(apr, "student", s.account_id ?? "");
 
         const { error } = await opts.supabase
           .from("accounts")
