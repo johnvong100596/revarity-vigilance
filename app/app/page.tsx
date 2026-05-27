@@ -417,21 +417,58 @@ export default async function HomePage() {
           </Link>
         </>
       ) : (
-        // Empty state
-        <section className="mt-12 flex flex-col items-center text-center">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-            No accounts yet
+        // Onboarding empty state — the "first 30 seconds" guided flow
+        <section className="mt-6">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-primary">
+            Welcome to Vigilance
           </div>
-          <p className="mb-10 max-w-[300px] text-[15px] leading-relaxed text-text-secondary">
-            Connect your bank to add accounts. The ritual starts with knowing
-            what you have.
+          <h2 className="text-balance text-2xl font-bold leading-tight tracking-[-0.02em] text-text-primary">
+            Let&apos;s set up your first 30 seconds.
+          </h2>
+          <p className="mt-3 max-w-[340px] text-[15px] leading-relaxed text-text-secondary">
+            Two steps and the ritual begins. It starts with knowing what you
+            have.
           </p>
-          <Link
-            href="/app/accounts/add"
-            className="inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Connect your bank
-          </Link>
+
+          {/* Step 1 — connect a bank (active) */}
+          <div className="mt-8 rounded-card border border-accent-primary/30 bg-bg-tertiary p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-primary text-xs font-bold text-white">
+                1
+              </span>
+              <div>
+                <div className="text-[15px] font-semibold text-text-primary">
+                  Connect your first bank
+                </div>
+                <div className="text-xs text-text-secondary">
+                  Read-only and secure. Takes about 20 seconds.
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/app/accounts/add"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-accent-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Connect your bank
+            </Link>
+          </div>
+
+          {/* Step 2 — first check-in (preview, unlocks after step 1) */}
+          <div className="mt-3 rounded-card border border-text-primary/8 bg-bg-tertiary/50 p-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-text-primary/8 text-xs font-bold text-text-muted">
+                2
+              </span>
+              <div>
+                <div className="text-[15px] font-semibold text-text-muted">
+                  Run your first check-in
+                </div>
+                <div className="text-xs text-text-muted">
+                  Unlocks once a bank is connected.
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       )}
     </>
