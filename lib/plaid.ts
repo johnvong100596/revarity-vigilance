@@ -222,7 +222,7 @@ export async function refreshLiabilitiesForItem(opts: {
         const paymentDueDay = c.next_payment_due_date
           ? new Date(c.next_payment_due_date).getUTCDate()
           : null;
-        warnIfImplausibleApr(purchaseApr, "credit", c.account_id);
+        warnIfImplausibleApr(purchaseApr, "credit", c.account_id ?? "");
 
         const { error } = await opts.supabase
           .from("accounts")
