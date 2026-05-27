@@ -28,12 +28,47 @@ interface ParsedRow {
  * Skips rows that can't be parsed cleanly. Returns the parsed rows for
  * the UI to preview before commit.
  */
+/**
+ * Split one CSV line into fields, honoring double-quoted fields that may
+ * contain commas ("Coffee, milk, sugar") and escaped quotes (""). Handles
+ * the single-line case, which covers every balance-export format we
+ * support; multi-line quoted fields are not expected here.
+ */
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"'; // escaped quote
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      fields.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  fields.push(cur);
+  return fields.map((f) => f.trim());
+}
+
 export async function parseScotiaCsv(csvText: string): Promise<ParsedRow[]> {
   const lines = csvText.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
 
-  const header = lines[0].toLowerCase();
-  const cells = header.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+  const cells = parseCsvLine(lines[0]).map((c) => c.toLowerCase());
   const dateIdx = cells.findIndex((c) => c.includes("date"));
   const balanceIdx = cells.findIndex((c) => c.includes("balance"));
   if (dateIdx < 0 || balanceIdx < 0) return [];
@@ -42,10 +77,9 @@ export async function parseScotiaCsv(csvText: string): Promise<ParsedRow[]> {
   for (let i = 1; i < lines.length; i++) {
     const raw = lines[i];
     if (!raw.trim()) continue;
-    // Naive CSV split — handles unquoted Scotia exports. For fully
-    // RFC-4180-correct parsing we'd need a real parser; sufficient
-    // for the export formats supported here.
-    const parts = raw.split(",").map((p) => p.replace(/^"|"$/g, "").trim());
+    // Quote-aware split so a description like "Coffee, milk" doesn't
+    // shift the column count and drop the row.
+    const parts = parseCsvLine(raw);
     const dateStr = parts[dateIdx];
     const balanceStr = parts[balanceIdx];
     if (!dateStr || !balanceStr) continue;

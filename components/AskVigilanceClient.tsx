@@ -146,6 +146,11 @@ export function AskVigilanceClient({
           <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-text-primary">
             {latestAnswer.answer}
           </p>
+          <p className="mt-3 border-t border-text-primary/6 pt-3 text-[10px] leading-relaxed text-text-muted">
+            Vigilance reflects on your own numbers. It isn&apos;t financial,
+            investment, or tax advice — for decisions with real stakes, talk
+            to a professional.
+          </p>
         </article>
       )}
 

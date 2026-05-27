@@ -26,7 +26,9 @@ interface AccountRowProps {
 
 export function AccountRow({ account, position, logo }: AccountRowProps) {
   const isDebt = account.category === "debt";
-  const balanceDecimal = toDecimal(account.balance);
+  // Use the magnitude — we render the sign ourselves below, so a balance
+  // stored negative (e.g. a manual "-500") won't produce "−−$500".
+  const balanceDecimal = toDecimal(account.balance).abs();
   const display = formatBalance(balanceDecimal, account.currency);
   const decay = getAccountDecayState(account);
   const days = daysSinceTouched(account);

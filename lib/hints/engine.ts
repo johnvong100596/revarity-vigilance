@@ -7,6 +7,10 @@ import { SEVERITY_SCORE, type UserContext } from "./types";
 /** Per-day-per-user budget for LLM hint composition (Task 2.4 spec). */
 const LLM_HINTS_PER_DAY = 3;
 
+/** Templates where only one hint should be active per workspace at a time,
+ *  regardless of which account it references (see L2 dedup logic below). */
+const SINGLETON_TEMPLATES = new Set<string>(["H-001-debt-priority"]);
+
 interface RunOptions {
   /** If provided, scope account fetch + insert to this workspace. If
    * omitted, falls back to the user's active workspace from profile. */
@@ -81,6 +85,25 @@ export async function runHintsEngine(
         }
       })
     );
+
+    // L2: some hints are singletons per workspace — only one should be
+    // active regardless of which account it points at (e.g. "your most
+    // expensive debt"). When such a hint fires for a DIFFERENT account
+    // than the currently active one (user paid one card down, another
+    // is now the worst), retire the stale one so they don't pile up.
+    for (const r of results) {
+      if (!r || !r.res.fires) continue;
+      if (!SINGLETON_TEMPLATES.has(r.evaluator.templateId)) continue;
+      const newAccountId = r.res.relatedAccountId ?? null;
+      if (!newAccountId) continue;
+      await supabase
+        .from("hints")
+        .update({ status: "muted" })
+        .eq("workspace_id", workspaceId)
+        .eq("hint_template_id", r.evaluator.templateId)
+        .eq("status", "active")
+        .neq("related_account_id", newAccountId);
+    }
 
     interface HintInsertRow {
       user_id: string;

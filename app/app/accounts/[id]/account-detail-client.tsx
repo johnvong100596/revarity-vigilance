@@ -598,7 +598,7 @@ function DebtEditForm({
           className="flex h-11 w-full rounded-md border border-text-primary/12 bg-bg-primary px-3.5 py-2 text-sm tabular-nums text-text-primary focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
         />
         <p className="text-[11px] text-text-muted">
-          Banks call this APR. It&apos;s the % you pay on a year&apos;s balance.
+          The percentage you pay on a year&apos;s balance.
         </p>
       </Field>
       <Field label="Credit limit">

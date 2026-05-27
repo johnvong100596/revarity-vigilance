@@ -254,9 +254,17 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
 
   revalidatePath("/app/ask");
 
+  // Re-count after the insert so the returned remaining is authoritative
+  // even under concurrent requests (L3)
+  const { count: usedAfter } = await supabase
+    .from("ask_history")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", utcMidnight.toISOString());
+
   return {
     ok: true,
     answer,
-    remainingToday: Math.max(0, DAILY_CAP - ((usedToday ?? 0) + 1)),
+    remainingToday: Math.max(0, DAILY_CAP - (usedAfter ?? usedToday ?? 0)),
   };
 }

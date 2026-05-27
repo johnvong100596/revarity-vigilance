@@ -11,11 +11,22 @@ function client(): Resend | null {
 
 export const DEFAULT_FROM = "Vigilance <noreply@revarity.com>";
 
+export interface SendResult {
+  sent: boolean;
+  /** True when we deliberately didn't try (no API key configured) — this
+   *  is NOT a failure. Cron logs use it to distinguish "Resend isn't set
+   *  up yet" from "the send attempt errored". */
+  skipped?: boolean;
+  id?: string;
+  reason?: string;
+}
+
 /**
- * Renders a React Email component to HTML and sends via Resend. Returns
- * { sent: true, id } on success, { sent: false, reason } if Resend isn't
- * configured or the send fails. Cron handlers swallow failures so the
- * batch continues for other users.
+ * Renders a React Email component to HTML and sends via Resend.
+ *   - { sent: true, id }            success
+ *   - { sent: false, skipped: true} Resend not configured (no key) — benign
+ *   - { sent: false, reason }       a real send failure
+ * Cron handlers swallow failures so the batch continues for other users.
  */
 export async function sendEmail({
   to,
@@ -28,10 +39,10 @@ export async function sendEmail({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: any;
   from?: string;
-}): Promise<{ sent: boolean; id?: string; reason?: string }> {
+}): Promise<SendResult> {
   const c = client();
   if (!c) {
-    return { sent: false, reason: "RESEND_API_KEY not set" };
+    return { sent: false, skipped: true, reason: "RESEND_API_KEY not set" };
   }
   try {
     const html = await render(component, { pretty: false });

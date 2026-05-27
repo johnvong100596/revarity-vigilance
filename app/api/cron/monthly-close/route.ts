@@ -134,7 +134,10 @@ export async function POST(req: NextRequest) {
         }),
       });
       if (result.sent) sent++;
-      else {
+      else if (result.skipped) {
+        // Resend not configured yet — benign, not a failure
+        skipped++;
+      } else {
         skipped++;
         failures.push({ userId: p.id, reason: result.reason ?? "unknown" });
       }
