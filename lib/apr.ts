@@ -16,14 +16,24 @@ import type { Account } from "@/lib/types";
 const CREDIT_CEILING = 60;
 const MORTGAGE_CEILING = 25;
 
-function looksAmortizing(account: Pick<Account, "subtitle" | "name">): boolean {
+function looksAmortizing(
+  account: Pick<Account, "account_type" | "subtitle" | "name">
+): boolean {
+  // Structured signal first (M1): Plaid/CSV/manual ingest classifies
+  // mortgages, auto, student loans and HELOCs as account_type "loan". These
+  // amortize, so they get the lower (25%) ceiling. Credit cards are never
+  // "loan", so a high-but-valid card APR keeps the 60% credit ceiling and
+  // stays verified instead of being mis-tiered by its name.
+  if (account.account_type === "loan") return true;
+  // Fallback only for manual/CSV rows whose type wasn't set to "loan" but
+  // whose name clearly names an amortizing product.
   const text = `${account.subtitle ?? ""} ${account.name ?? ""}`.toLowerCase();
-  return /mortgage|student|auto|car loan|home loan|heloc/.test(text);
+  return /mortgage|student loan|auto loan|car loan|home loan|heloc/.test(text);
 }
 
 /** Upper plausibility bound for this account's APR. */
 export function aprCeilingFor(
-  account: Pick<Account, "subtitle" | "name">
+  account: Pick<Account, "account_type" | "subtitle" | "name">
 ): number {
   return looksAmortizing(account) ? MORTGAGE_CEILING : CREDIT_CEILING;
 }
@@ -34,7 +44,7 @@ export function aprCeilingFor(
  */
 export function isAprVerified(
   apr: number | null | undefined,
-  account: Pick<Account, "subtitle" | "name">
+  account: Pick<Account, "account_type" | "subtitle" | "name">
 ): boolean {
   if (apr == null || !Number.isFinite(apr)) return false;
   return apr > 0 && apr <= aprCeilingFor(account);
