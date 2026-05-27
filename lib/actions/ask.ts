@@ -5,8 +5,10 @@ import { z } from "zod";
 
 import { composeCopy, CLAUDE_MODEL } from "@/lib/anthropic";
 import { toDecimal } from "@/lib/money";
+import { dailyNetWorthSeries, type RawSnapshot } from "@/lib/rituals";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveWorkspaceId } from "@/lib/workspace";
+import type { Account } from "@/lib/types";
 
 const DAILY_CAP = 5; // Per user, resets at UTC midnight
 const MAX_QUESTION = 500;
@@ -161,7 +163,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     supabase
       .from("accounts")
       .select(
-        "name, type, category, balance, currency, apr, min_payment, last_acknowledged_at"
+        "id, name, type, category, balance, currency, apr, min_payment, last_acknowledged_at"
       )
       .eq("workspace_id", workspaceId)
       .eq("archived", false),
@@ -174,7 +176,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
       .limit(5),
     supabase
       .from("balance_snapshots")
-      .select("balance, captured_at")
+      .select("account_id, balance, captured_at")
       .eq("workspace_id", workspaceId)
       .gte("captured_at", ninetyDaysAgo.toISOString())
       .order("captured_at", { ascending: true }),
@@ -197,12 +199,28 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     return sum.plus(signed);
   }, toDecimal(0));
 
-  // 90d net worth delta — first vs latest snapshot total
+  // 90d net worth delta (M3) — aggregate snapshots into per-day net-worth
+  // totals and compare the earliest real day to now, instead of subtracting
+  // two arbitrary individual snapshot rows (which could be different
+  // accounts entirely). Reuses the same series the projection chart uses.
+  // Cast: dailyNetWorthSeries only reads id/category/balance, all selected.
   let ninetyDayChange: number | undefined;
-  if (snapshots.length >= 2) {
-    const first = Number(snapshots[0].balance);
-    const last = Number(snapshots[snapshots.length - 1].balance);
-    ninetyDayChange = last - first;
+  const series = dailyNetWorthSeries(
+    accounts as unknown as Account[],
+    snapshots as RawSnapshot[],
+    ninetyDaysAgo,
+    new Date()
+  );
+  const firstReal = series.find((p) => p.netWorth !== null);
+  const lastReal = [...series].reverse().find((p) => p.netWorth !== null);
+  if (
+    firstReal &&
+    lastReal &&
+    firstReal !== lastReal &&
+    firstReal.netWorth !== null &&
+    lastReal.netWorth !== null
+  ) {
+    ninetyDayChange = lastReal.netWorth - firstReal.netWorth;
   }
 
   const context: AskContext = {
