@@ -23,6 +23,7 @@ export interface Account {
   source: AccountSource;
   plaid_account_id: string | null;
   plaid_item_id: string | null;
+  institution_id: string | null;
   crypto_symbol: string | null;
   crypto_quantity: number | null;
   quick_login_url: string | null;

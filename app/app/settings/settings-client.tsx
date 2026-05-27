@@ -15,6 +15,7 @@ import {
   removeMember,
   switchWorkspace,
 } from "@/lib/actions/workspaces";
+import { BankIcon } from "@/components/BankIcon";
 import { createClient } from "@/lib/supabase/client";
 import type { WorkspaceRole } from "@/lib/types";
 
@@ -85,6 +86,8 @@ interface PlaidItemCardProps {
   institution: string;
   lastSyncAt: string | null;
   status: string;
+  logoBase64?: string | null;
+  colorPrimary?: string | null;
 }
 
 export function PlaidItemCard({
@@ -92,6 +95,8 @@ export function PlaidItemCard({
   institution,
   lastSyncAt,
   status,
+  logoBase64,
+  colorPrimary,
 }: PlaidItemCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -144,19 +149,27 @@ export function PlaidItemCard({
   return (
     <div className="rounded-card border border-text-primary/8 bg-bg-tertiary p-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-sm font-medium text-text-primary">
-            {institution}
-          </div>
-          <div className="mt-0.5 text-xs text-text-secondary">
-            {syncedAt
-              ? `Last synced ${syncedAt.toLocaleString()}`
-              : "Never synced"}
-            {status !== "active" && (
-              <span className="ml-2 rounded-full bg-negative/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-negative">
-                {status}
-              </span>
-            )}
+        <div className="flex min-w-0 items-center gap-3">
+          <BankIcon
+            logoBase64={logoBase64}
+            colorPrimary={colorPrimary}
+            label={institution}
+            size={40}
+          />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium text-text-primary">
+              {institution}
+            </div>
+            <div className="mt-0.5 text-xs text-text-secondary">
+              {syncedAt
+                ? `Last synced ${syncedAt.toLocaleString()}`
+                : "Never synced"}
+              {status !== "active" && (
+                <span className="ml-2 rounded-full bg-negative/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-negative">
+                  {status}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

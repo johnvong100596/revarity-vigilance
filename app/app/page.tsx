@@ -16,6 +16,7 @@ import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { getUserDecaySummary } from "@/lib/decay";
+import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -104,6 +105,22 @@ export default async function HomePage() {
   const accounts: Account[] = accountsRes.data ?? [];
   const hints: Hint[] = hintsRes.data ?? [];
   const snapshots90d: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
+
+  // Bank icons: resolve institution logos for the accounts on this page.
+  // ensureLogos lazily fetches any missing/stale ones from Plaid (one-time
+  // per institution, then cached 30d) and is best-effort — failures just
+  // fall back to the generic letter icon.
+  const institutionIds = accounts
+    .map((a) => a.institution_id)
+    .filter((id): id is string => Boolean(id));
+  let logoMap: Record<string, InstitutionLogo> = {};
+  if (institutionIds.length > 0) {
+    try {
+      logoMap = await ensureLogos(supabase, institutionIds);
+    } catch {
+      logoMap = {};
+    }
+  }
   const brokenBanks = (brokenItemsRes.data ?? []).map((b) => ({
     id: b.id as string,
     institutionName: (b.institution_name as string | null) ?? null,
@@ -269,7 +286,11 @@ export default async function HomePage() {
                       : "middle";
               return (
                 <li key={a.id}>
-                  <AccountRow account={a} position={position} />
+                  <AccountRow
+                    account={a}
+                    position={position}
+                    logo={a.institution_id ? logoMap[a.institution_id] : null}
+                  />
                 </li>
               );
             })}

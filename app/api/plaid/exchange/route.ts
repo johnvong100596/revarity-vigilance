@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { runHintsEngine } from "@/lib/hints/engine";
+import { fetchAndCacheInstitutionLogo } from "@/lib/institution-logos";
 import {
   encryptPlaidToken,
   mapPlaidAccountType,
@@ -110,6 +111,7 @@ export async function POST(req: NextRequest) {
         source: "plaid",
         plaid_account_id: a.account_id,
         plaid_item_id: plaidItem.id,
+        institution_id: institutionId,
         position: idx,
         last_balance_updated_at: now,
       };
@@ -150,6 +152,16 @@ export async function POST(req: NextRequest) {
     // 7. Run hint evaluation now that new accounts (with full debt fields,
     //    if available) exist
     await runHintsEngine(user.id, { workspaceId });
+
+    // 8. Cache the institution logo + brand color for the bank-icons UI.
+    //    Best-effort — never fail the connection over a missing logo.
+    if (institutionId) {
+      try {
+        await fetchAndCacheInstitutionLogo(institutionId);
+      } catch (e) {
+        console.warn("[plaid/exchange] logo cache failed", e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

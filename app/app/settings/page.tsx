@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/settings";
+import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
 import { CURRENCIES } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import type { Account, Profile, WorkspaceMember } from "@/lib/types";
@@ -21,6 +22,7 @@ import type { Account, Profile, WorkspaceMember } from "@/lib/types";
 interface PlaidItemRow {
   id: string;
   institution_name: string | null;
+  institution_id: string | null;
   last_sync_at: string | null;
   status: string;
 }
@@ -51,7 +53,7 @@ export default async function SettingsPage() {
         .order("name", { ascending: true }),
       supabase
         .from("plaid_items")
-        .select("id, institution_name, last_sync_at, status")
+        .select("id, institution_name, institution_id, last_sync_at, status")
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: true }),
       supabase
@@ -77,6 +79,17 @@ export default async function SettingsPage() {
     "id" | "name" | "subtitle"
   >[];
   const plaidItems = (plaidItemsRes.data ?? []) as PlaidItemRow[];
+
+  // Institution logos for the connected-banks list (best-effort)
+  const itemInstitutionIds = plaidItems
+    .map((i) => i.institution_id)
+    .filter((id): id is string => Boolean(id));
+  const itemLogoMap: Record<string, InstitutionLogo> =
+    itemInstitutionIds.length > 0
+      ? await ensureLogos(supabase, itemInstitutionIds).catch(
+          () => ({}) as Record<string, InstitutionLogo>
+        )
+      : {};
   // Supabase JS resolves the !inner join inconsistently — sometimes the
   // joined row is returned as an object, sometimes as a single-element
   // array depending on the inferred FK. Normalize via unknown cast.
@@ -255,6 +268,16 @@ export default async function SettingsPage() {
                 institution={item.institution_name ?? "Unnamed institution"}
                 lastSyncAt={item.last_sync_at}
                 status={item.status}
+                logoBase64={
+                  item.institution_id
+                    ? itemLogoMap[item.institution_id]?.logo_base64 ?? null
+                    : null
+                }
+                colorPrimary={
+                  item.institution_id
+                    ? itemLogoMap[item.institution_id]?.color_primary ?? null
+                    : null
+                }
               />
             ))}
           </div>

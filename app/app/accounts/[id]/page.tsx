@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { AccountDetailClient, type SnapshotPoint } from "./account-detail-client";
+import { BankIcon } from "@/components/BankIcon";
+import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
 import { createClient } from "@/lib/supabase/server";
 import type { Account } from "@/lib/types";
 
@@ -40,6 +42,15 @@ export default async function AccountDetailPage({
   const account = accountRes.data as Account | null;
   if (!account) notFound();
 
+  // Institution logo for the header (best-effort)
+  let logo: InstitutionLogo | null = null;
+  if (account.institution_id) {
+    const map = await ensureLogos(supabase, [account.institution_id]).catch(
+      () => ({}) as Record<string, InstitutionLogo>
+    );
+    logo = map[account.institution_id] ?? null;
+  }
+
   const snapshots: SnapshotPoint[] = (snapshotsRes.data ?? []).map((s) => ({
     capturedAt: s.captured_at as string,
     balance: Number(s.balance),
@@ -72,15 +83,23 @@ export default async function AccountDetailPage({
         <div className="w-9" />
       </header>
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-[-0.025em] text-text-primary">
-          {account.name}
-        </h1>
-        {account.subtitle && (
-          <div className="mt-1 text-sm text-text-secondary">
-            {account.subtitle}
-          </div>
-        )}
+      <div className="mb-6 flex items-center gap-4">
+        <BankIcon
+          logoBase64={logo?.logo_base64}
+          colorPrimary={logo?.color_primary}
+          label={account.name}
+          size={64}
+        />
+        <div className="min-w-0">
+          <h1 className="truncate text-3xl font-bold tracking-[-0.025em] text-text-primary">
+            {account.name}
+          </h1>
+          {account.subtitle && (
+            <div className="mt-1 text-sm text-text-secondary">
+              {account.subtitle}
+            </div>
+          )}
+        </div>
       </div>
 
       <AccountDetailClient account={account} snapshots={snapshots} />
