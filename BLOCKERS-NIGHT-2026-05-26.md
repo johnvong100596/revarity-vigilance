@@ -66,6 +66,51 @@ Dashboard webhook config, do that now — link is
 
 ---
 
+## Plaid Canada — needs account-level Country access in Production
+
+**Reported bug (2026-05-26):** Plaid Link rejects Canadian +1 phone
+numbers on the returning-user phone enrollment screen.
+
+**Code status: NOT the cause — already correct.** The Link token is
+created with `country_codes: ['US', 'CA']` (`LINK_COUNTRY_CODES` in
+`lib/plaid.ts`, used by `app/api/plaid/link-token/route.ts`). Products
+are `transactions` + `liabilities` + `investments` (no `auth`, which
+is the product that would force US-only when CA is included). Language
+is `en`. This has been in the code since BUILD 6 (commit 820f731,
+2026-05-25). No code change is needed or possible to fix this further.
+
+**Actual blocker — Plaid Dashboard:** the `country_codes` request only
+takes effect if Canada is enabled at the account level for the active
+environment. Per Plaid, if a country code is sent that the account
+isn't approved for, the returning-user "Remember Me" phone flow falls
+back to standard Link / rejects the number.
+
+**What you do:**
+1. Go to **Plaid Dashboard → Team Settings → Country access**
+   (<https://dashboard.plaid.com/team/settings>).
+2. Confirm **Canada** is enabled for the **Production** environment.
+   (Sandbox enables CA by default, which is why CA worked in earlier
+   sandbox testing but the real phone screen rejects it.)
+3. If Canada is **not** enabled, request access. Plaid sometimes grants
+   CA automatically with Production approval, sometimes it needs a
+   separate request. Until it's granted, the `['US','CA']` code can't
+   take effect for Canadian users.
+4. Once Canada shows as enabled, re-test — same +1 dropdown, but Canada
+   is now a recognized country for the token, and the bank picker shows
+   both US and Canadian institutions.
+
+**Note on where to test:** the entire Plaid integration lives on the
+`day3` branch only — it is NOT on `master`, so it is NOT on the
+vigilance.revarity.com production deploy yet. Plaid Link can only be
+exercised on the `day3` Vercel **preview** URL until `day3` is promoted
+to `master`. See the report at the end of this session for the
+promotion decision.
+
+**French Canadian (`fr`) support:** intentionally deferred to v1.1.
+Language stays `en` for now.
+
+---
+
 ## Plaid Recurring Transactions product — needs grant request
 
 **What I'll ship:** scaffolded `/app/subscriptions` route with empty-
