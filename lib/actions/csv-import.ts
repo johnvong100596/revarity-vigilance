@@ -138,9 +138,17 @@ export async function importCsvHistory(input: {
     );
   }
 
-  // Build snapshot inserts. fx_rate = 1 only for USD accounts; multi-
-  // currency conversion stays a Day-6 fx-cron concern.
-  const fxRate = account.currency === "USD" ? 1 : null;
+  // Build snapshot inserts. fx_rate = 1 when the account is already in the
+  // user's home currency (M6 — was hardcoded to USD, which mis-flagged a
+  // CAD account for a CAD-home user); other currencies stay null for the
+  // Day-6 fx-cron to convert.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("home_currency")
+    .eq("id", user.id)
+    .single();
+  const homeCurrency = (profile?.home_currency as string) ?? "USD";
+  const fxRate = account.currency === homeCurrency ? 1 : null;
   const inserts = rows.map((r) => ({
     user_id: user.id,
     workspace_id: account.workspace_id,
