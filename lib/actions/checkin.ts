@@ -31,15 +31,18 @@ async function getUserTimezone(
 }
 
 /**
- * After any check-in action, decide whether this completes the day.
- * If all active accounts have a check-in for today AND we haven't already
- * counted today as complete, bump streak + last_checkin_date.
+ * After any check-in action, decide whether this completes the user's day.
+ *
+ * Streak is PER-USER (M2 decision, 2026-05-26): every member keeps their own
+ * streak and the workspace has none. A member completes their day when THEY
+ * have personally checked in every active account they can see. We intersect
+ * the user's check-ins with the currently-active accounts, so an account
+ * archived after a check-in can't falsely complete the day, and a teammate's
+ * check-ins never count toward this user's streak.
  */
 async function maybeCompleteDay(userId: string) {
   const supabase = createClient();
 
-  // Active accounts is workspace-scoped via RLS (the SELECT policy filters
-  // to accounts in workspaces the user belongs to) — no user_id eq needed
   const { data: profile } = await supabase
     .from("profiles")
     .select("awareness_streak, best_streak, last_checkin_date, timezone")
@@ -49,23 +52,27 @@ async function maybeCompleteDay(userId: string) {
 
   const tz = (profile.timezone as string) || DEFAULT_TIMEZONE;
   const today = localDateISO(tz);
-
-  const [{ count: activeAccountsCount }, { count: checkedInCount }] =
-    await Promise.all([
-      supabase
-        .from("accounts")
-        .select("id", { count: "exact", head: true })
-        .eq("archived", false),
-      supabase
-        .from("check_ins")
-        .select("account_id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("checkin_date", today),
-    ]);
-
   if (profile.last_checkin_date === today) return;
-  if (!activeAccountsCount || !checkedInCount) return;
-  if (checkedInCount < activeAccountsCount) return;
+
+  // Active accounts (workspace-scoped via RLS) vs the user's OWN check-ins
+  // for today. Intersecting the two keeps this strictly per-user.
+  const [{ data: activeAccounts }, { data: todayCheckins }] = await Promise.all([
+    supabase.from("accounts").select("id").eq("archived", false),
+    supabase
+      .from("check_ins")
+      .select("account_id")
+      .eq("user_id", userId)
+      .eq("checkin_date", today),
+  ]);
+
+  const activeIds = new Set((activeAccounts ?? []).map((a) => a.id as string));
+  if (activeIds.size === 0) return;
+  const checkedActiveCount = new Set(
+    (todayCheckins ?? [])
+      .map((c) => c.account_id as string)
+      .filter((id) => activeIds.has(id))
+  ).size;
+  if (checkedActiveCount < activeIds.size) return;
 
   const yesterday = addDaysISO(today, -1);
   const continuingStreak = profile.last_checkin_date === yesterday;

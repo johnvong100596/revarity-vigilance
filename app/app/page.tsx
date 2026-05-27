@@ -72,6 +72,8 @@ export default async function HomePage() {
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
   const tz = profile?.timezone || DEFAULT_TIMEZONE;
+  // "Today" in the user's timezone so day boundaries match check-in storage.
+  const today = localDateISO(tz);
 
   // 90-day balance snapshots feed the projection chart's trend slope
   const ninetyDaysAgo = new Date();
@@ -79,7 +81,7 @@ export default async function HomePage() {
   const thirtyFiveDaysAgo = new Date();
   thirtyFiveDaysAgo.setDate(thirtyFiveDaysAgo.getDate() - 35);
 
-  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes, checkinsRes] =
+  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes, checkinsRes, checkinsTodayRes] =
     await Promise.all([
     supabase
       .from("accounts")
@@ -112,6 +114,13 @@ export default async function HomePage() {
       .select("checkin_date")
       .eq("user_id", user.id)
       .gte("checkin_date", thirtyFiveDaysAgo.toISOString().slice(0, 10)),
+    // The user's OWN check-ins for today — drives per-user "needs check-in"
+    // so a teammate acknowledging an account never marks it done for you (M2).
+    supabase
+      .from("check_ins")
+      .select("account_id")
+      .eq("user_id", user.id)
+      .eq("checkin_date", today),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
@@ -176,12 +185,14 @@ export default async function HomePage() {
     : null;
   const showWeekChange = weekChange !== null && Math.abs(weekChange) >= 0.01;
 
-  // "Today" in the user's timezone so day boundaries match check-in storage
-  const today = localDateISO(tz);
+  // Per-user "needs check-in" (M2): count the accounts THIS user hasn't
+  // checked in today, from their own check-ins — not the shared
+  // last_acknowledged_at, which a teammate's ack would flip for everyone.
+  const checkedInTodayIds = new Set(
+    (checkinsTodayRes.data ?? []).map((c) => c.account_id as string)
+  );
   const accountsNeedingCheckin = accounts.filter(
-    (a) =>
-      !a.last_acknowledged_at ||
-      localDateISO(tz, new Date(a.last_acknowledged_at)) !== today
+    (a) => !checkedInTodayIds.has(a.id)
   ).length;
 
   const hasAccounts = accounts.length > 0;
