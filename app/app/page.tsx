@@ -15,6 +15,7 @@ import { AccountRow } from "@/components/AccountRow";
 import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
+import { StreakBadge } from "@/components/StreakBadge";
 import { getUserDecaySummary } from "@/lib/decay";
 import { ensureLogos, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
@@ -73,8 +74,11 @@ export default async function HomePage() {
   // 90-day balance snapshots feed the projection chart's trend slope
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const thirtyFiveDaysAgo = new Date();
+  thirtyFiveDaysAgo.setDate(thirtyFiveDaysAgo.getDate() - 35);
 
-  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes] = await Promise.all([
+  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes, checkinsRes] =
+    await Promise.all([
     supabase
       .from("accounts")
       .select("*")
@@ -100,11 +104,22 @@ export default async function HomePage() {
       .eq("workspace_id", workspaceId)
       .gte("captured_at", ninetyDaysAgo.toISOString())
       .order("captured_at", { ascending: true }),
+    // Distinct-ish check-in dates over the last 35 days for the streak grid
+    supabase
+      .from("check_ins")
+      .select("checkin_date")
+      .eq("user_id", user.id)
+      .gte("checkin_date", thirtyFiveDaysAgo.toISOString().slice(0, 10)),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const hints: Hint[] = hintsRes.data ?? [];
   const snapshots90d: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
+  const checkinDates: string[] = Array.from(
+    new Set(
+      (checkinsRes.data ?? []).map((r) => r.checkin_date as string)
+    )
+  );
 
   // Bank icons: resolve institution logos for the accounts on this page.
   // ensureLogos lazily fetches any missing/stale ones from Plaid (one-time
@@ -136,6 +151,29 @@ export default async function HomePage() {
     const signed = toDecimal(a.balance).times(a.category === "asset" ? 1 : -1);
     return sum.plus(signed);
   }, toDecimal(0));
+
+  // Week-over-week net worth change (Task 3.3). Baseline = latest snapshot
+  // per account on/before 7 days ago; fall back to current balance for
+  // accounts with no older snapshot. Only show when we actually have a
+  // baseline AND the change is non-trivial (keeps the UI clean).
+  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weekAgoBalById = new Map<string, number>();
+  for (const s of snapshots90d) {
+    if (new Date(s.captured_at).getTime() <= weekAgoMs) {
+      weekAgoBalById.set(s.account_id, Number(s.balance)); // ascending → last wins
+    }
+  }
+  let haveWeekBaseline = false;
+  let weekAgoNet = 0;
+  for (const a of accounts) {
+    if (weekAgoBalById.has(a.id)) haveWeekBaseline = true;
+    const bal = weekAgoBalById.get(a.id) ?? Number(a.balance);
+    weekAgoNet += bal * (a.category === "asset" ? 1 : -1);
+  }
+  const weekChange = haveWeekBaseline
+    ? netWorth.minus(toDecimal(weekAgoNet)).toNumber()
+    : null;
+  const showWeekChange = weekChange !== null && Math.abs(weekChange) >= 0.01;
 
   const today = new Date().toISOString().slice(0, 10);
   const accountsNeedingCheckin = accounts.filter(
@@ -207,14 +245,18 @@ export default async function HomePage() {
         <div className="mt-2 text-[44px] font-bold leading-none tracking-[-0.03em] tabular-nums text-text-primary">
           {formatBalance(netWorth, homeCurrency)}
         </div>
+        {showWeekChange && weekChange !== null && (
+          <div
+            className={`mt-2 text-sm font-medium tabular-nums ${
+              weekChange >= 0 ? "text-positive" : "text-negative"
+            }`}
+          >
+            {weekChange >= 0 ? "+" : "−"}
+            {formatBalance(Math.abs(weekChange), homeCurrency)} this week
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2 text-xs">
-          {streak > 0 ? (
-            <span className="font-medium text-positive">
-              {streak} day streak
-            </span>
-          ) : (
-            <span className="text-text-muted">Day 1 of vigilance</span>
-          )}
+          <StreakBadge streak={streak} checkinDates={checkinDates} />
           {hasMixedCurrency && (
             <>
               <span className="text-text-muted">·</span>
