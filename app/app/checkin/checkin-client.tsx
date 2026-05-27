@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
-import { ArrowLeft, ArrowRight, ArrowUp, Check, Edit2, Flag } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, Check, Edit2, Flag, Flame } from "lucide-react";
 
 import { ProgressRing } from "@/components/ProgressRing";
 import {
@@ -18,6 +18,9 @@ import type { Account } from "@/lib/types";
 interface CheckinClientProps {
   accounts: Account[];
   initialDone: number;
+  /** Streak to celebrate once the session completes (already projected
+   *  for today's completion by the page). */
+  streakAfter: number;
 }
 
 type Mode = "swipe" | "edit" | "flag";
@@ -30,7 +33,11 @@ function haptic(ms: number) {
   }
 }
 
-export function CheckinClient({ accounts, initialDone }: CheckinClientProps) {
+export function CheckinClient({
+  accounts,
+  initialDone,
+  streakAfter,
+}: CheckinClientProps) {
   const router = useRouter();
   const [queue, setQueue] = useState(accounts);
   const [done, setDone] = useState(initialDone);
@@ -44,9 +51,13 @@ export function CheckinClient({ accounts, initialDone }: CheckinClientProps) {
   }
 
   if (!current) {
-    // All resolved — celebration view
-    // Refresh router so /app picks up the new streak
-    return <CelebrationView onContinue={() => router.push("/app")} />;
+    // All resolved — celebration view auto-advances to /app after a beat
+    return (
+      <CelebrationView
+        streak={streakAfter}
+        onContinue={() => router.push("/app")}
+      />
+    );
   }
 
   return (
@@ -398,27 +409,59 @@ function FlagView({
   );
 }
 
-function CelebrationView({ onContinue }: { onContinue: () => void }) {
+function CelebrationView({
+  streak,
+  onContinue,
+}: {
+  streak: number;
+  onContinue: () => void;
+}) {
+  const [leaving, setLeaving] = useState(false);
+
+  // Micro-celebration: show for ~1.6s, fade, then auto-advance home.
+  // The button stays as a manual escape hatch in case timers are throttled.
+  useEffect(() => {
+    const fade = setTimeout(() => setLeaving(true), 1300);
+    const go = setTimeout(onContinue, 1650);
+    return () => {
+      clearTimeout(fade);
+      clearTimeout(go);
+    };
+  }, [onContinue]);
+
   return (
     <main className="flex min-h-[80vh] flex-col items-center justify-center text-center">
       <motion.div
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        animate={{ opacity: leaving ? 0 : 1 }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        className="flex flex-col items-center"
       >
-        <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-primary">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+          className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-accent-primary text-white"
+        >
+          <Check className="h-8 w-8" strokeWidth={2.5} />
+        </motion.div>
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-primary">
           Checked in
         </div>
-        <h1 className="text-balance text-[40px] font-bold leading-tight tracking-[-0.025em] text-text-primary">
-          See you tomorrow.
-        </h1>
-        <p className="mx-auto mt-5 max-w-[280px] text-sm leading-relaxed text-text-secondary">
-          The ritual is the product. Show up tomorrow and the next day.
-        </p>
+        {streak > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.35 }}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-positive"
+          >
+            <Flame className="h-4 w-4 text-accent-primary" />
+            {streak} day streak
+          </motion.div>
+        )}
       </motion.div>
       <button
         onClick={onContinue}
-        className="mt-10 inline-flex items-center gap-2 rounded-full bg-accent-primary px-7 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
+        className="mt-10 text-xs font-medium text-text-muted underline-offset-4 transition hover:text-text-primary hover:underline"
       >
         Back to home
       </button>

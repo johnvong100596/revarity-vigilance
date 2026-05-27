@@ -121,5 +121,15 @@ export default async function CheckinPage() {
     );
   }
 
-  return <CheckinClient accounts={remaining} initialDone={doneCount} />;
+  // Project the streak we'll celebrate: completing today's last account
+  // bumps the streak by 1 unless today was already counted.
+  const streakAfter = finishedToday ? streak : streak + 1;
+
+  return (
+    <CheckinClient
+      accounts={remaining}
+      initialDone={doneCount}
+      streakAfter={streakAfter}
+    />
+  );
 }
