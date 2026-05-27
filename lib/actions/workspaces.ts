@@ -111,12 +111,15 @@ export async function inviteMember(input: {
   if (!user) throw new Error("Not authenticated");
 
   const token = randomBytes(24).toString("hex");
+  // N1: invites expire 7 days after creation
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { error } = await supabase.from("workspace_members").insert({
     workspace_id: parsed.workspaceId,
     invited_email: parsed.email.trim().toLowerCase(),
     invite_token: token,
     role: parsed.role,
     invited_by_user_id: user.id,
+    invite_expires_at: expiresAt,
   });
   if (error) {
     if (error.code === "23505") {

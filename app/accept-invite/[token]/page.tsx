@@ -40,6 +40,7 @@ export default async function AcceptInvitePage({
         workspace_name: peek.workspace_name as string,
         email_matches_current_user:
           peek.email_matches_current_user as boolean,
+        is_expired: Boolean(peek.is_expired),
       }
     : null;
 
@@ -82,6 +83,30 @@ export default async function AcceptInvitePage({
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
         >
           Open it
+        </Link>
+      </main>
+    );
+  }
+
+  // Expired invite (N1) — show a clear state with a path to request a new one
+  if (invite.is_expired) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-bg-primary px-6 py-12 text-center">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-negative">
+          Invite expired
+        </div>
+        <h1 className="mt-4 max-w-[420px] text-balance text-[36px] font-bold leading-tight tracking-[-0.025em]">
+          This invite has expired.
+        </h1>
+        <p className="mx-auto mt-5 max-w-[340px] text-sm leading-relaxed text-text-secondary">
+          Invites are good for 7 days. Ask whoever sent it to invite you
+          again — it only takes a moment.
+        </p>
+        <Link
+          href="/app"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent-primary px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Go to my workspace
         </Link>
       </main>
     );
