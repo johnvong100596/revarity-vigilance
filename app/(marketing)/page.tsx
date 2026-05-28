@@ -71,7 +71,7 @@ export default async function LandingPage() {
       {/* ─── HERO ─── */}
       <section className="relative mx-auto max-w-[1200px] px-6 pb-24 pt-16 md:px-10 md:pb-40 md:pt-28">
         <div className="mx-auto max-w-[1000px] text-center">
-          <h1 className="text-balance text-[52px] font-bold leading-[0.95] tracking-[-0.04em] text-text-primary md:text-[112px]">
+          <h1 className="font-fraunces text-balance text-[52px] font-semibold leading-[0.95] tracking-[-0.04em] text-text-primary md:text-[112px]">
             Watch your money.
             <br />
             <span className="text-text-secondary">Or watch it drift.</span>
@@ -118,7 +118,7 @@ export default async function LandingPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             How it works
           </div>
-          <h2 className="mt-4 text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
+          <h2 className="mt-4 font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
             Three steps. Built to last.
           </h2>
         </div>
@@ -151,7 +151,7 @@ export default async function LandingPage() {
       {/* ─── EDITORIAL QUOTE ─── */}
       <AnimatedSection className="relative bg-bg-tertiary">
         <div className="mx-auto max-w-[1000px] px-6 py-28 text-center md:px-10 md:py-40">
-          <p className="text-balance text-[32px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary md:text-[56px]">
+          <p className="font-fraunces text-balance text-[32px] font-medium leading-[1.15] tracking-[-0.02em] text-text-primary md:text-[56px]">
             “Finance is like your widow.
             <br />
             <span className="text-accent-primary">Ignore her, and she comes back to bite you.</span>”
@@ -168,7 +168,7 @@ export default async function LandingPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             The moat
           </div>
-          <h2 className="mt-4 text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
+          <h2 className="mt-4 font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
             What financial experts see.
             <br />
             <span className="text-text-secondary">Surfaced for you.</span>
@@ -247,7 +247,7 @@ export default async function LandingPage() {
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
               The rituals
             </div>
-            <h2 className="mt-4 text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
+            <h2 className="mt-4 font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
               Most people review yearly.
               <br />
               <span className="text-text-secondary">
@@ -293,7 +293,7 @@ export default async function LandingPage() {
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
             Trust
           </div>
-          <h2 className="mt-4 text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
+          <h2 className="mt-4 font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[64px]">
             Your data. Your control.
           </h2>
 
@@ -318,7 +318,7 @@ export default async function LandingPage() {
       {/* ─── FINAL CTA ─── */}
       <AnimatedSection className="relative bg-bg-tertiary">
         <div className="mx-auto max-w-[1000px] px-6 py-24 text-center md:px-10 md:py-40">
-          <h2 className="text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] md:text-[72px]">
+          <h2 className="font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[72px]">
             Start your awareness streak.
           </h2>
           <p className="mx-auto mt-6 max-w-[440px] text-base leading-relaxed text-text-secondary md:text-lg">
@@ -414,7 +414,7 @@ function Step({
         <div className="text-7xl font-bold tabular-nums tracking-[-0.04em] text-accent-primary md:text-[120px]">
           {num}
         </div>
-        <h3 className="mt-6 text-balance text-[32px] font-bold leading-tight tracking-[-0.025em] md:text-[48px]">
+        <h3 className="mt-6 font-fraunces text-balance text-[32px] font-semibold leading-tight tracking-[-0.025em] md:text-[48px]">
           {title}
         </h3>
         <p className="mt-5 max-w-[480px] text-base leading-relaxed text-text-secondary md:text-lg">

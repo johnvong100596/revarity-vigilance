@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Fraunces, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 // Inter is loaded with the full weight range for Apple/Tesla-style hierarchy:
@@ -9,6 +9,26 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+// Typography split (THESIS.md): the APP (/app/*, /checkin, /settings, …) is
+// Inter-only. MARKETING surfaces (/, /privacy, /terms) use Fraunces for
+// headings + JetBrains Mono for metadata. These variables are declared
+// globally but only fetched on routes whose elements use the `font-fraunces`
+// / `font-mono` classes — app surfaces never reference them, so they stay
+// Inter and never download these files.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -40,7 +60,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

@@ -22,10 +22,12 @@ export default function PrivacyPage() {
         </Link>
       </header>
 
-      <h1 className="text-balance text-[40px] font-bold leading-[1.05] tracking-[-0.025em] text-text-primary md:text-[56px]">
+      <h1 className="font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.02em] text-text-primary md:text-[56px]">
         Privacy
       </h1>
-      <p className="mt-3 text-sm text-text-muted">Last updated {LAST_UPDATED}</p>
+      <p className="mt-3 font-mono text-xs uppercase tracking-[0.1em] text-text-muted">
+        Last updated {LAST_UPDATED}
+      </p>
 
       <div className="prose-vigilance mt-12 space-y-10 text-[15px] leading-relaxed text-text-secondary md:text-[16px]">
         <Section title="The short version">
@@ -245,7 +247,7 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-bold tracking-[-0.015em] text-text-primary md:text-2xl">
+      <h2 className="font-fraunces text-xl font-semibold tracking-[-0.01em] text-text-primary md:text-2xl">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>

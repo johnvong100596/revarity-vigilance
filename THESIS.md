@@ -17,9 +17,27 @@ Most people fail with money not because they make bad decisions — they fail be
 
 Personal/internal tool for Cena (CTO of Revarity) and team — now with a public marketing landing at `vigilance.revarity.com` for waitlist / friends-and-family access.
 
-**Aesthetic (v2, locked 2026-05-25):** premium, calm, ritualistic — Wealthsimple × Apple × Tesla. **Cream-on-light with signal-red accents** — single palette across the public marketing landing (`vigilance.revarity.com`) *and* the authenticated app (`/app/*`). Inter throughout, no serif. Heavy weights for hero typography, pill-shaped CTAs.
+**Aesthetic (v2, locked 2026-05-25):** premium, calm, ritualistic — Wealthsimple × Apple × Tesla. **Cream-on-light with signal-red accents** — single palette across the public marketing landing (`vigilance.revarity.com`) *and* the authenticated app (`/app/*`). Heavy weights for hero typography, pill-shaped CTAs. **Typography is split by surface — see the Typography Split section below** (app = Inter only; marketing = Fraunces headings + Inter body + JetBrains Mono metadata; confirmed 2026-05-27).
 
 > *Aesthetic v1 archived:* the original brief was gold-on-dark (Apple Fitness × Linear × Copilot Money). After the v1 landing shipped on May 25 the owner pivoted to a Wealthsimple-adjacent bright palette + Apple/Tesla-style sans for both marketing and the authed app. The v3 reference HTML in §5 below still shows the v1 visual treatment — read it as a structural reference (sections, rhythm, content hierarchy), not chromatic. Live tokens are in ARCHITECTURE.md §9.
+
+## Typography Split
+
+The Vigilance product family uses TWO distinct typography systems for two distinct purposes:
+
+### APP surfaces (where users live daily)
+Routes: /app/*, /checkin, /settings, /accounts/*, /subscriptions, /ask
+Font: Inter throughout
+Why: Inter is the most legible UI font for non-technical users. Looks like the apps they already know (Twitter, GitHub, Instagram web, Stripe). Brain-dead readable on any screen size, any age, any background.
+
+### MARKETING + Document surfaces
+Routes: / (landing), /privacy, /terms, marketing emails
+Font: Fraunces (serif) for headings + Inter for body + JetBrains Mono for metadata
+Why: Premium feel for the moments where we're SELLING the product. Editorial quality differentiates us from Mint/Monarch/Quicken which look like 2018 fintech.
+
+NEVER mix the two. App surfaces are Inter only. Marketing surfaces use Fraunces sparingly for headings.
+
+> *Implementation:* fonts are declared in `app/layout.tsx` as CSS variables and exposed in Tailwind as `font-fraunces` and `font-mono`. The browser only downloads Fraunces/JetBrains on routes that actually use those classes, so `/app/*` stays Inter-only with zero extra font payload. Marketing email headings use a `Georgia, serif` fallback (Fraunces isn't email-safe).
 
 ---
 

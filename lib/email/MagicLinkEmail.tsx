@@ -39,6 +39,9 @@ const PALETTE = {
 
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+// Marketing/document surfaces use Fraunces for headings; email clients can't
+// load it, so headings fall back to an email-safe serif (THESIS.md split).
+const HEADING_FONT = 'Georgia, Cambria, "Times New Roman", serif';
 
 export default function MagicLinkEmail({
   confirmationUrl = "{{ .ConfirmationURL }}",
@@ -81,9 +84,10 @@ export default function MagicLinkEmail({
             </Text>
             <Text
               style={{
+                fontFamily: HEADING_FONT,
                 fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
                 lineHeight: 1.1,
                 color: PALETTE.textPrimary,
                 margin: "0 0 12px",

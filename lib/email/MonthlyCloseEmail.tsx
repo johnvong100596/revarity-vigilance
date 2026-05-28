@@ -35,6 +35,7 @@ const PALETTE = {
 
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+const HEADING_FONT = 'Georgia, Cambria, "Times New Roman", serif';
 
 export default function MonthlyCloseEmail({
   displayName = "there",
@@ -83,9 +84,10 @@ export default function MonthlyCloseEmail({
           </Text>
           <Text
             style={{
+              fontFamily: HEADING_FONT,
               fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
               lineHeight: 1.15,
               margin: "0 0 16px",
             }}

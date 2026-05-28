@@ -64,10 +64,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Inter for everything — Apple/Tesla-adjacent geometric sans.
+        // APP surfaces: Inter for everything — Apple/Tesla-adjacent sans.
         sans: ["var(--font-inter)", "system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         display: ["var(--font-inter)", "system-ui", "sans-serif"],
         serif: ["var(--font-inter)", "system-ui", "sans-serif"],
+        // MARKETING surfaces only (/, /privacy, /terms). Never use these in
+        // /app/* — see the Typography Split section in THESIS.md.
+        fraunces: ["var(--font-fraunces)", "Georgia", "Cambria", "serif"],
+        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",
