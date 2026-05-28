@@ -15,15 +15,17 @@ import {
 import { AccountRow } from "@/components/AccountRow";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { LocaleDetector } from "@/components/LocaleDetector";
+import { PayThisWeek } from "@/components/PayThisWeek";
 import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { StreakBadge } from "@/components/StreakBadge";
 import { WelcomeMoment } from "@/components/WelcomeMoment";
+import { buildUpcomingPayments } from "@/lib/payments";
 import { getUserDecaySummary } from "@/lib/decay";
 import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
-import { DEFAULT_TIMEZONE, localDateISO } from "@/lib/time";
+import { DEFAULT_TIMEZONE, addDaysISO, localDateISO } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatBalance,
@@ -85,7 +87,7 @@ export default async function HomePage() {
   const thirtyFiveDaysAgo = new Date();
   thirtyFiveDaysAgo.setDate(thirtyFiveDaysAgo.getDate() - 35);
 
-  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes, checkinsRes, checkinsTodayRes] =
+  const [accountsRes, hintsRes, brokenItemsRes, snapshotsRes, checkinsRes, checkinsTodayRes, paymentMarksRes] =
     await Promise.all([
     supabase
       .from("accounts")
@@ -125,6 +127,14 @@ export default async function HomePage() {
       .select("account_id")
       .eq("user_id", user.id)
       .eq("checkin_date", today),
+    // Payment marks for the pay-this-week widget — only matter for due dates
+    // within ±35 days of today; one or two months of history is plenty.
+    supabase
+      .from("payment_marks")
+      .select("account_id, due_date")
+      .eq("user_id", user.id)
+      .gte("due_date", addDaysISO(today, -35))
+      .lte("due_date", addDaysISO(today, 35)),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
@@ -212,6 +222,15 @@ export default async function HomePage() {
       a.credit_limit != null &&
       Number(a.credit_limit) > 0
   );
+
+  // Pay-this-week queue (WS3): aggregate upcoming + overdue debt payments
+  // and subtract anything the user has marked paid.
+  const paidMarks = new Set(
+    (paymentMarksRes.data ?? []).map(
+      (m) => `${m.account_id as string}:${m.due_date as string}`
+    )
+  );
+  const upcomingPayments = buildUpcomingPayments(accounts, paidMarks);
 
   // Onboarding (WS3). Silent locale detection runs once; the welcome moment
   // fires once after the first balance lands; the getting-started checklist
@@ -336,6 +355,12 @@ export default async function HomePage() {
           {showGettingStarted && (
             <GettingStartedCard items={gettingStartedItems} />
           )}
+
+          {/* Pay-this-week (renders nothing when nothing's due) */}
+          <PayThisWeek
+            payments={upcomingPayments}
+            homeCurrency={homeCurrency}
+          />
 
           {/* Daily check-in CTA */}
           <Link
