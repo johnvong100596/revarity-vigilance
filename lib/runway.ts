@@ -41,6 +41,14 @@ function nextMonthlyOccurrenceWithinDays(
   days: number,
   now: Date = new Date()
 ): boolean {
+  // day_of_month is validated 1–31 on write, but this pure helper can also be
+  // reached by legacy rows and other callers. A 0 would make `new Date(y, m, 0)`
+  // roll back to the prior month's last day — a silently wrong "occurrence" —
+  // and NaN/fractional values are meaningless here. Anything outside an integer
+  // 1–31 is treated as "no occurrence" rather than fabricating a date.
+  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+    return false;
+  }
   const y = now.getFullYear();
   const m = now.getMonth();
   const daysInThisMonth = new Date(y, m + 1, 0).getDate();
