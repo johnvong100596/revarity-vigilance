@@ -25,7 +25,7 @@ export default function TermsPage() {
       <h1 className="font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.02em] text-text-primary md:text-[56px]">
         Terms
       </h1>
-      <p className="mt-3 font-mono text-xs uppercase tracking-[0.1em] text-text-muted">
+      <p className="mt-3 font-meta text-xs uppercase tracking-[0.1em] text-text-muted">
         Last updated {LAST_UPDATED}
       </p>
 

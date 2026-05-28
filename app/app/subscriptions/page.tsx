@@ -62,7 +62,7 @@ export default async function SubscriptionsPage() {
       </div>
 
       <div className="mb-3 text-sm font-medium text-text-primary">
-        We found these recurring charges. Tap any to learn more.
+        Here&apos;s how it&apos;ll look once it&apos;s on.
       </div>
 
       <ul className="overflow-hidden rounded-card border border-text-primary/8">
@@ -92,7 +92,7 @@ export default async function SubscriptionsPage() {
               <div className="text-[15px] font-semibold tabular-nums text-text-primary">
                 {s.amount}
               </div>
-              <span className="text-[11px] text-text-muted">Stop tracking</span>
+              <span className="text-[11px] text-text-muted/60">/ month</span>
             </div>
           </li>
         ))}

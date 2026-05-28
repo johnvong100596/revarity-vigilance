@@ -15,8 +15,9 @@ const inter = Inter({
 // Inter-only. MARKETING surfaces (/, /privacy, /terms) use Fraunces for
 // headings + JetBrains Mono for metadata. These variables are declared
 // globally but only fetched on routes whose elements use the `font-fraunces`
-// / `font-mono` classes — app surfaces never reference them, so they stay
-// Inter and never download these files.
+// / `font-meta` classes — app surfaces never reference them, so they stay
+// Inter and never download these files. (`font-meta`, not `font-mono`, so
+// the app's CSV-panel `font-mono` keeps the system monospace stack.)
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",

@@ -37,7 +37,7 @@ Why: Premium feel for the moments where we're SELLING the product. Editorial qua
 
 NEVER mix the two. App surfaces are Inter only. Marketing surfaces use Fraunces sparingly for headings.
 
-> *Implementation:* fonts are declared in `app/layout.tsx` as CSS variables and exposed in Tailwind as `font-fraunces` and `font-mono`. The browser only downloads Fraunces/JetBrains on routes that actually use those classes, so `/app/*` stays Inter-only with zero extra font payload. Marketing email headings use a `Georgia, serif` fallback (Fraunces isn't email-safe).
+> *Implementation:* fonts are declared in `app/layout.tsx` as CSS variables and exposed in Tailwind as `font-fraunces` (headings) and `font-meta` (JetBrains Mono metadata). `font-meta` is deliberately NOT named `font-mono` — overriding Tailwind's built-in `font-mono` would pull JetBrains into any app route that uses it (e.g. the CSV import panel). The browser only downloads Fraunces/JetBrains on routes that use these classes, so `/app/*` stays Inter-only with zero extra font payload. Marketing email headings use a `Georgia, serif` fallback (Fraunces isn't email-safe).
 
 ---
 

@@ -70,8 +70,12 @@ const config: Config = {
         serif: ["var(--font-inter)", "system-ui", "sans-serif"],
         // MARKETING surfaces only (/, /privacy, /terms). Never use these in
         // /app/* — see the Typography Split section in THESIS.md.
+        // NOTE: this is `meta`, not `mono`, on purpose — overriding Tailwind's
+        // built-in `font-mono` would pull JetBrains into app routes that use
+        // font-mono (e.g. the CSV import panel). Marketing metadata uses
+        // `font-meta`; the app's `font-mono` keeps the system monospace stack.
         fraunces: ["var(--font-fraunces)", "Georgia", "Cambria", "serif"],
-        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+        meta: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",
