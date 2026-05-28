@@ -63,11 +63,11 @@ export function WelcomeMoment({ netWorthFormatted }: WelcomeMomentProps) {
             <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-primary">
               There you are
             </div>
-            <div className="mt-3 text-[40px] font-bold leading-none tracking-[-0.03em] tabular-nums text-text-primary">
-              {netWorthFormatted}
+            <div className="mt-3 text-sm text-text-secondary">
+              Your net worth:
             </div>
-            <div className="mt-4 text-sm text-text-secondary">
-              Welcome to Vigilance.
+            <div className="mt-2 text-[40px] font-bold leading-none tracking-[-0.03em] tabular-nums text-text-primary">
+              {netWorthFormatted}
             </div>
           </motion.div>
         </motion.div>

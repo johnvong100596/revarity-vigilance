@@ -485,7 +485,7 @@ export default async function HomePage() {
             Welcome to Vigilance
           </div>
           <h2 className="text-balance text-[28px] font-bold leading-tight tracking-[-0.025em] text-text-primary">
-            Hi. Let&apos;s see your money.
+            Let&apos;s see what you have.
           </h2>
           <p className="mx-auto mt-3 max-w-[300px] text-[15px] leading-relaxed text-text-secondary">
             Connect a bank and your net worth shows up in about 30 seconds.
@@ -497,7 +497,7 @@ export default async function HomePage() {
             <Plus className="h-4 w-4" /> Connect your first bank
           </Link>
           <p className="mt-4 text-[11px] text-text-muted">
-            Read-only. We can never move your money.
+            Read-only. We never move your money.
           </p>
         </section>
       )}

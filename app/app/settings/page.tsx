@@ -273,8 +273,7 @@ export default async function SettingsPage() {
           )}
         </div>
         <p className="mb-4 text-[11px] text-text-muted">
-          Encrypted and read-only. We can see your balances but can never move
-          your money.
+          Encrypted and read-only. We never move your money.
         </p>
         {plaidItems.length === 0 ? (
           <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-4 text-center">

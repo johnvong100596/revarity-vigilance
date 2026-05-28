@@ -32,9 +32,8 @@ export default async function AddAccountPage() {
         Connect your bank
       </h1>
       <p className="mb-8 text-[15px] leading-relaxed text-text-secondary">
-        Vigilance pulls your balances automatically using Plaid — the
-        bank-connection service trusted by 12,000+ banks. Read-only access.
-        Your sign-in credentials never touch our servers.
+        Balances arrive automatically through Plaid — the bank link trusted
+        by 12,000+ banks. Read-only. We never move your money.
       </p>
 
       <section className="mb-8">
@@ -55,7 +54,7 @@ export default async function AddAccountPage() {
           <li>
             <span className="text-text-primary">We don&apos;t see:</span> your
             online banking password, your card number, or who you pay. We
-            can&apos;t move money — connections are read-only.
+            never move your money — connections are read-only.
           </li>
           <li>
             <span className="text-text-primary">You control it:</span> remove
