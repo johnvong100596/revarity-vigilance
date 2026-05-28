@@ -24,6 +24,7 @@ export interface Account {
   plaid_account_id: string | null;
   plaid_item_id: string | null;
   institution_id: string | null;
+  entity_id: string | null;
   crypto_symbol: string | null;
   crypto_quantity: number | null;
   quick_login_url: string | null;
@@ -77,6 +78,18 @@ export interface Profile {
   invited_by_user_id: string | null;
   welcomed: boolean;
   locale_detected: boolean;
+  is_operator: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Entity {
+  id: string;
+  user_id: string;
+  name: string;
+  color_hex: string;
+  icon: string | null;
+  is_personal: boolean;
   created_at: string;
   updated_at: string;
 }

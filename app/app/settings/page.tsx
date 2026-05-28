@@ -9,6 +9,7 @@ import {
   ToggleRow,
   WorkspaceSection,
 } from "./settings-client";
+import { OperatorSection } from "@/components/OperatorSection";
 import { ReferralCard } from "@/components/ReferralCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos
 import { CURRENCIES } from "@/lib/money";
 import { TIMEZONE_OPTIONS } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
-import type { Account, Profile, WorkspaceMember } from "@/lib/types";
+import type { Account, Entity, Profile, WorkspaceMember } from "@/lib/types";
 
 interface PlaidItemRow {
   id: string;
@@ -44,7 +45,7 @@ export default async function SettingsPage() {
   if (!profile?.active_workspace_id) redirect("/login");
   const workspaceId = profile.active_workspace_id;
 
-  const [archivedRes, plaidItemsRes, workspacesRes, membersRes, invitedCountRes] =
+  const [archivedRes, plaidItemsRes, workspacesRes, membersRes, invitedCountRes, entitiesRes] =
     await Promise.all([
       supabase
         .from("accounts")
@@ -72,6 +73,12 @@ export default async function SettingsPage() {
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("invited_by_user_id", user.id),
+      // Operator entities (only used when is_operator)
+      supabase
+        .from("entities")
+        .select("*")
+        .order("is_personal", { ascending: false })
+        .order("created_at", { ascending: true }),
     ]);
   const invitedCount = invitedCountRes.count ?? 0;
 
@@ -80,6 +87,7 @@ export default async function SettingsPage() {
     "id" | "name" | "subtitle"
   >[];
   const plaidItems = (plaidItemsRes.data ?? []) as PlaidItemRow[];
+  const entities = (entitiesRes.data ?? []) as Entity[];
 
   // Institution logos for the connected-banks list (best-effort)
   const itemInstitutionIds = plaidItems
@@ -222,6 +230,12 @@ export default async function SettingsPage() {
         members={members}
         currentUserId={user.id}
         currentUserRole={myRole}
+      />
+
+      {/* Operator tier (default OFF — toggle reveals entity manager) */}
+      <OperatorSection
+        isOperator={profile?.is_operator ?? false}
+        entities={entities}
       />
 
       {/* Preferences */}
