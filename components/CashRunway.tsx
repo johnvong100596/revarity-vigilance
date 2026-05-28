@@ -107,7 +107,11 @@ export function CashRunway({
             tone="negative"
           />
           <Row
-            label="Net this month"
+            label={
+              summary.monthlyNet >= 0
+                ? "Left over this month"
+                : "Short this month"
+            }
             value={`${summary.monthlyNet >= 0 ? "+" : "−"}${formatBalance(Math.abs(summary.monthlyNet), homeCurrency, { roundWholeAbove1000: true })}`}
             tone={summary.monthlyNet >= 0 ? "positive" : "negative"}
             bold
@@ -117,9 +121,9 @@ export function CashRunway({
 
       {open && (
         <p className="mt-2 px-4 text-[10px] leading-relaxed text-text-muted">
-          Estimated from cash + active IOUs + credit-card minimums. A real
-          spend-rate signal lands when our bank-data partner turns on the
-          recurring-charge feed.
+          A rough estimate from your cash, your IOUs, and credit-card minimum
+          payments. It&apos;ll get sharper once your bank starts sharing your
+          regular monthly charges.
         </p>
       )}
     </section>
