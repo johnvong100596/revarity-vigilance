@@ -138,7 +138,7 @@ export default function PrivacyPage() {
           <ul className="list-disc space-y-2 pl-5">
             <li>
               <strong className="font-semibold text-text-primary">
-                Disconnect a bank
+                Unlink a bank
               </strong>{" "}
               anytime from Settings. We stop pulling new balances and
               archive the linked accounts.

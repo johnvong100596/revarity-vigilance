@@ -79,8 +79,9 @@ function LoginForm() {
           {status === "sending" ? "Sending…" : "Email me a link"}
         </Button>
         {status === "sent" && (
-          <p className="text-center text-sm text-positive">
-            Check {email} for the link.
+          <p className="text-center text-sm leading-relaxed text-positive">
+            Check your inbox at {email}. Sometimes it takes 30 seconds — and
+            peek in spam if it doesn&apos;t show up.
           </p>
         )}
       </form>

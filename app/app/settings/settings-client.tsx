@@ -121,7 +121,7 @@ export function PlaidItemCard({
         setSyncedAt(new Date());
         router.refresh();
       } catch (e) {
-        setErrorMsg(e instanceof Error ? e.message : "Sync failed");
+        setErrorMsg(e instanceof Error ? e.message : "Refresh failed");
       }
     });
   }
@@ -129,7 +129,7 @@ export function PlaidItemCard({
   function handleDisconnect() {
     if (
       !confirm(
-        `Disconnect ${institution}? Linked accounts will be archived but you can reconnect later.`
+        `Unlink ${institution}? Its accounts will be archived, but you can link it again anytime.`
       )
     )
       return;
@@ -139,7 +139,7 @@ export function PlaidItemCard({
         await disconnectPlaidItem({ plaidItemRowId: id });
         router.refresh();
       } catch (e) {
-        setErrorMsg(e instanceof Error ? e.message : "Disconnect failed");
+        setErrorMsg(e instanceof Error ? e.message : "Unlink failed");
       }
     });
   }
@@ -162,8 +162,8 @@ export function PlaidItemCard({
             </div>
             <div className="mt-0.5 text-xs text-text-secondary">
               {syncedAt
-                ? `Last synced ${syncedAt.toLocaleString()}`
-                : "Never synced"}
+                ? `Last refreshed ${syncedAt.toLocaleString()}`
+                : "Not refreshed yet"}
               {status !== "active" && (
                 <span className="ml-2 rounded-full bg-negative/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-negative">
                   {status}
@@ -180,7 +180,7 @@ export function PlaidItemCard({
           disabled={pending || disabled}
           className="flex-1 rounded-full border border-text-primary/15 bg-bg-tertiary py-2 text-xs font-semibold text-text-primary transition hover:bg-bg-secondary disabled:opacity-50"
         >
-          {pending ? "Working…" : "Sync now"}
+          {pending ? "Working…" : "Refresh"}
         </button>
         <button
           type="button"
@@ -188,7 +188,7 @@ export function PlaidItemCard({
           disabled={pending}
           className="flex-1 rounded-full border border-negative/30 bg-bg-tertiary py-2 text-xs font-semibold text-negative transition hover:bg-negative/5 disabled:opacity-50"
         >
-          Disconnect
+          Unlink
         </button>
       </div>
       {errorMsg && (

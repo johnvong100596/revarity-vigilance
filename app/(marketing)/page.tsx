@@ -200,20 +200,19 @@ export default async function LandingPage() {
             </span>
           </HintExample>
           <HintExample category="pay_attention" id="H-002">
-            Visa hits{" "}
+            Your Visa is{" "}
             <span className="font-semibold text-accent-primary tabular-nums">
               78%
             </span>{" "}
-            utilization in{" "}
+            full and the bill cuts in{" "}
             <span className="font-semibold text-accent-primary tabular-nums">
               4
             </span>{" "}
-            days at statement close. Pay{" "}
+            days. Paying{" "}
             <span className="font-semibold text-accent-primary tabular-nums">
               $2,400
             </span>{" "}
-            by Tuesday to keep under 30% — preserves credit score for upcoming
-            credit needs.
+            by Tuesday keeps you under 30% — which protects your credit score.
           </HintExample>
           <HintExample category="opportunity" id="H-101">
             Bank of Canada cut{" "}

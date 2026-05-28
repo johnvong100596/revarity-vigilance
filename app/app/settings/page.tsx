@@ -275,13 +275,13 @@ export default async function SettingsPage() {
         {plaidItems.length === 0 ? (
           <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-4 text-center">
             <p className="text-xs leading-relaxed text-text-secondary">
-              No banks connected yet.
+              Connect your first bank to see your money in one place.
             </p>
             <Link
               href="/app/accounts/add"
               className="mt-3 inline-flex items-center text-xs font-semibold text-accent-primary underline-offset-4 hover:underline"
             >
-              Connect with Plaid →
+              Connect a bank →
             </Link>
           </div>
         ) : (

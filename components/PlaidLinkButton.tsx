@@ -130,8 +130,8 @@ export function PlaidLinkButton() {
         {label}
       </button>
       <p className="mt-2 text-center text-[11px] leading-relaxed text-text-muted">
-        Connect in 30 seconds. Read-only — your sign-in details never touch
-        our servers.
+        We use Plaid — the same secure bank link behind Venmo and Robinhood.
+        Read-only: we can see your balances but can never move your money.
       </p>
       {errorMsg && (
         <p className="mt-3 text-center text-xs text-negative">{errorMsg}</p>
