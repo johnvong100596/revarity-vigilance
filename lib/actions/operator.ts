@@ -36,12 +36,20 @@ export async function setOperator(input: { value: boolean }): Promise<void> {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id);
     if ((count ?? 0) === 0) {
-      await supabase.from("entities").insert({
+      const { error: seedError } = await supabase.from("entities").insert({
         user_id: user.id,
         name: "Personal",
         color_hex: "#1A1A1A",
         is_personal: true,
       });
+      // The count→insert pair is a TOCTOU: a double-tapped toggle (or a refresh
+      // mid-transition) can have two calls both see count 0 and both insert.
+      // The (user_id, name) unique constraint rejects the loser with 23505 —
+      // that's the race resolving correctly, not a failure, so swallow it.
+      // Any other error is real and shouldn't be silently dropped.
+      if (seedError && seedError.code !== "23505") {
+        throw new Error(`operator toggle failed: ${seedError.message}`);
+      }
     }
   }
 
