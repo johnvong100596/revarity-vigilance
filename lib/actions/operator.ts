@@ -196,11 +196,21 @@ export async function tagAccountWithEntity(input: {
     }
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("accounts")
     .update({ entity_id: parsed.entityId })
-    .eq("id", parsed.accountId);
+    .eq("id", parsed.accountId)
+    .select("id");
   if (error) throw new Error(`Tag failed: ${error.message}`);
+  // On a shared workspace account, RLS lets a plain member's UPDATE match zero
+  // rows and return no error — a silent no-op the dropdown would treat as
+  // success. Detect the empty result and surface it so EntityAssign shows the
+  // message and reverts.
+  if (!updated || updated.length === 0) {
+    throw new Error(
+      "Only a workspace owner or admin can change which business this account belongs to.",
+    );
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/settings");
