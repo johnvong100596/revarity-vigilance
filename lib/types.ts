@@ -75,6 +75,8 @@ export interface Profile {
   active_workspace_id: string;
   referral_token: string | null;
   invited_by_user_id: string | null;
+  welcomed: boolean;
+  locale_detected: boolean;
   created_at: string;
   updated_at: string;
 }

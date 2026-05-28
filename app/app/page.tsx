@@ -12,10 +12,13 @@ import {
 } from "lucide-react";
 
 import { AccountRow } from "@/components/AccountRow";
+import { GettingStartedCard } from "@/components/GettingStartedCard";
+import { LocaleDetector } from "@/components/LocaleDetector";
 import { PlaidReconnectBanner } from "@/components/PlaidReconnectBanner";
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { StreakBadge } from "@/components/StreakBadge";
+import { WelcomeMoment } from "@/components/WelcomeMoment";
 import { getUserDecaySummary } from "@/lib/decay";
 import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
@@ -62,12 +65,12 @@ export default async function HomePage() {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id, timezone")
+    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id, timezone, welcomed, locale_detected, created_at")
     .eq("id", user.id)
     .single();
   const profile = (profileRow ?? null) as Pick<
     Profile,
-    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id" | "timezone"
+    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id" | "timezone" | "welcomed" | "locale_detected" | "created_at"
   > | null;
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
@@ -203,6 +206,29 @@ export default async function HomePage() {
   const hasMixedCurrency =
     hasAccounts && accounts.some((a) => a.currency !== homeCurrency);
 
+  // Onboarding (WS3). Silent locale detection runs once; the welcome moment
+  // fires once after the first balance lands; the getting-started checklist
+  // shows for the first week until 3 of 4 are done.
+  const needsLocaleDetect = !(profile?.locale_detected ?? false);
+  const showWelcome = hasAccounts && !(profile?.welcomed ?? false);
+
+  const hasAnyCheckin = checkinDates.length > 0;
+  const hasSecondaryAccount =
+    accounts.length >= 2 ||
+    accounts.some((a) => a.account_type !== "bank" && a.account_type !== "cash");
+  const gettingStartedItems = [
+    { label: "Connected your first bank", done: hasAccounts, href: "/app/accounts/add" },
+    { label: "Do your first check-in", done: hasAnyCheckin, href: "/app/checkin" },
+    { label: "Add a credit card or investment", done: hasSecondaryAccount, href: "/app/accounts/add" },
+    { label: "Set your home currency", done: profile?.locale_detected ?? false, href: "/app/settings" },
+  ];
+  const gettingStartedDone = gettingStartedItems.filter((i) => i.done).length;
+  const daysSinceSignup = profile?.created_at
+    ? (Date.now() - new Date(profile.created_at).getTime()) / (24 * 60 * 60 * 1000)
+    : 0;
+  const showGettingStarted =
+    hasAccounts && gettingStartedDone < 3 && daysSinceSignup < 7;
+
   const TopHintIcon = topHint ? HINT_ICON[topHint.category] : null;
 
   // Decay system per THESIS.md §4 — 14+ days since the user touched ANY
@@ -222,6 +248,11 @@ export default async function HomePage() {
 
   return (
     <>
+      {needsLocaleDetect && <LocaleDetector />}
+      {showWelcome && (
+        <WelcomeMoment netWorthFormatted={formatBalance(netWorth, homeCurrency)} />
+      )}
+
       {/* Top bar */}
       <header className="mb-8 flex items-center justify-between">
         <Link
@@ -291,6 +322,10 @@ export default async function HomePage() {
 
       {hasAccounts ? (
         <>
+          {showGettingStarted && (
+            <GettingStartedCard items={gettingStartedItems} />
+          )}
+
           {/* Daily check-in CTA */}
           <Link
             href="/app/checkin"
@@ -440,58 +475,26 @@ export default async function HomePage() {
           </Link>
         </>
       ) : (
-        // Onboarding empty state — the "first 30 seconds" guided flow
-        <section className="mt-6">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-primary">
+        // Onboarding empty state — one welcome, one button (60-second rule).
+        <section className="mt-10 flex flex-col items-center text-center">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-primary">
             Welcome to Vigilance
           </div>
-          <h2 className="text-balance text-2xl font-bold leading-tight tracking-[-0.02em] text-text-primary">
-            Let&apos;s set up your first 30 seconds.
+          <h2 className="text-balance text-[28px] font-bold leading-tight tracking-[-0.025em] text-text-primary">
+            Hi. Let&apos;s see your money.
           </h2>
-          <p className="mt-3 max-w-[340px] text-[15px] leading-relaxed text-text-secondary">
-            Two steps and the ritual begins. It starts with knowing what you
-            have.
+          <p className="mx-auto mt-3 max-w-[300px] text-[15px] leading-relaxed text-text-secondary">
+            Connect a bank and your net worth shows up in about 30 seconds.
           </p>
-
-          {/* Step 1 — connect a bank (active) */}
-          <div className="mt-8 rounded-card border border-accent-primary/30 bg-bg-tertiary p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-primary text-xs font-bold text-white">
-                1
-              </span>
-              <div>
-                <div className="text-[15px] font-semibold text-text-primary">
-                  Connect your first bank
-                </div>
-                <div className="text-xs text-text-secondary">
-                  Read-only and secure. Takes about 20 seconds.
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/app/accounts/add"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-accent-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" /> Connect your bank
-            </Link>
-          </div>
-
-          {/* Step 2 — first check-in (preview, unlocks after step 1) */}
-          <div className="mt-3 rounded-card border border-text-primary/8 bg-bg-tertiary/50 p-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-text-primary/8 text-xs font-bold text-text-muted">
-                2
-              </span>
-              <div>
-                <div className="text-[15px] font-semibold text-text-muted">
-                  Run your first check-in
-                </div>
-                <div className="text-xs text-text-muted">
-                  Unlocks once a bank is connected.
-                </div>
-              </div>
-            </div>
-          </div>
+          <Link
+            href="/app/accounts/add"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent-primary px-7 py-3.5 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Connect your first bank
+          </Link>
+          <p className="mt-4 text-[11px] text-text-muted">
+            Read-only. We can never move your money.
+          </p>
         </section>
       )}
     </>
