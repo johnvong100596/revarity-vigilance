@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { AccountRow } from "@/components/AccountRow";
+import { CashRunway } from "@/components/CashRunway";
 import { EntityFilter } from "@/components/EntityFilter";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { LocaleDetector } from "@/components/LocaleDetector";
@@ -24,6 +25,7 @@ import { ReengageTakeover } from "@/components/ReengageTakeover";
 import { StreakBadge } from "@/components/StreakBadge";
 import { WelcomeMoment } from "@/components/WelcomeMoment";
 import { buildUpcomingPayments } from "@/lib/payments";
+import { calculateRunway } from "@/lib/runway";
 import { getUserDecaySummary } from "@/lib/decay";
 import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import type { RawSnapshot } from "@/lib/rituals";
@@ -179,6 +181,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const iousOwedToMe = filteredIous
     .filter((i) => i.direction === "owed_to_me")
     .reduce((s, i) => s + Number(i.amount), 0);
+
+  // Cash runway (WS7). Compute against the currently-filtered set so a
+  // scoped entity view shows that entity's runway, not the combined one.
+  const runwayScopeAccounts = !entityFilter
+    ? allAccounts
+    : entityFilter === "untagged"
+      ? allAccounts.filter((a) => a.entity_id == null)
+      : allAccounts.filter((a) => a.entity_id === entityFilter);
+  const runwaySummary = isOperator
+    ? calculateRunway({ accounts: runwayScopeAccounts, ious: filteredIous })
+    : null;
+  const runwayScopeLabel =
+    entityFilter && entityFilter !== "untagged"
+      ? entities.find((e) => e.id === entityFilter)?.name
+      : undefined;
 
   const accounts: Account[] = !entityFilter
     ? allAccounts
@@ -438,6 +455,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <>
           {showGettingStarted && (
             <GettingStartedCard items={gettingStartedItems} />
+          )}
+
+          {/* Cash runway (operator only; renders nothing without data) */}
+          {isOperator && runwaySummary && (
+            <CashRunway
+              summary={runwaySummary}
+              homeCurrency={homeCurrency}
+              scopeLabel={runwayScopeLabel}
+            />
           )}
 
           {/* Pay-this-week (renders nothing when nothing's due) */}

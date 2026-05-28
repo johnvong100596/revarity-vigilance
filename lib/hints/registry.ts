@@ -9,6 +9,7 @@ import { H302 } from "./H-302-total-utilization";
 import { H303 } from "./H-303-payment-overdue";
 import { H305 } from "./H-305-iou-due-soon";
 import { H306 } from "./H-306-iou-recurring-soon";
+import { H307 } from "./H-307-low-runway";
 import type { HintEvaluator } from "./types";
 
 // Edit this list to add or remove hints from the engine.
@@ -26,4 +27,5 @@ export const HINT_REGISTRY: HintEvaluator[] = [
   H303,
   H305,
   H306,
+  H307,
 ];
