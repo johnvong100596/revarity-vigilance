@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  ArrowLeftRight,
   ArrowRight,
   ChevronRight,
   CreditCard,
@@ -33,7 +34,7 @@ import {
   toDecimal,
   type Currency,
 } from "@/lib/money";
-import type { Account, Entity, Hint, Profile } from "@/lib/types";
+import type { Account, Entity, Hint, Iou, Profile } from "@/lib/types";
 
 const HINT_ACCENT: Record<Hint["category"], string> = {
   pay_attention: "border-l-hint-pay-attention",
@@ -151,14 +152,33 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   // picking a chip; default is "All" (combined view), matching grandma UX.
   const isOperator = profile?.is_operator ?? false;
   let entities: Entity[] = [];
+  let activeIous: Iou[] = [];
   if (isOperator) {
-    const { data: entRows } = await supabase
-      .from("entities")
-      .select("*")
-      .order("is_personal", { ascending: false })
-      .order("created_at", { ascending: true });
-    entities = (entRows ?? []) as Entity[];
+    const [entRes, iouRes] = await Promise.all([
+      supabase
+        .from("entities")
+        .select("*")
+        .order("is_personal", { ascending: false })
+        .order("created_at", { ascending: true }),
+      supabase.from("ious").select("*").eq("status", "active"),
+    ]);
+    entities = (entRes.data ?? []) as Entity[];
+    activeIous = (iouRes.data ?? []) as Iou[];
   }
+
+  // Scope active IOUs by the entity filter just like accounts (untagged
+  // bucket follows the same rules)
+  const filteredIous: Iou[] = !entityFilter
+    ? activeIous
+    : entityFilter === "untagged"
+      ? activeIous.filter((i) => i.entity_id == null)
+      : activeIous.filter((i) => i.entity_id === entityFilter);
+  const iousOwedByMe = filteredIous
+    .filter((i) => i.direction === "i_owe")
+    .reduce((s, i) => s + Number(i.amount), 0);
+  const iousOwedToMe = filteredIous
+    .filter((i) => i.direction === "owed_to_me")
+    .reduce((s, i) => s + Number(i.amount), 0);
 
   const accounts: Account[] = !entityFilter
     ? allAccounts
@@ -198,10 +218,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const activeHintCount = hints.length;
 
   // Net worth: assets minus debts. Multi-currency FX conversion lands Day 6.
-  const netWorth = accounts.reduce((sum, a) => {
-    const signed = toDecimal(a.balance).times(a.category === "asset" ? 1 : -1);
-    return sum.plus(signed);
-  }, toDecimal(0));
+  // Operator-tier IOUs add to the picture: money owed to you is an asset,
+  // money you owe is a debt. Non-operators contribute zero on both sides.
+  const netWorth = accounts
+    .reduce((sum, a) => {
+      const signed = toDecimal(a.balance).times(a.category === "asset" ? 1 : -1);
+      return sum.plus(signed);
+    }, toDecimal(0))
+    .plus(toDecimal(iousOwedToMe))
+    .minus(toDecimal(iousOwedByMe));
 
   // Week-over-week net worth change (Task 3.3). Baseline = latest snapshot
   // per account on/before 7 days ago. M4: only show this when EVERY active
@@ -366,6 +391,28 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             {formatBalance(Math.abs(weekChange), homeCurrency)} this week
           </div>
         )}
+        {isOperator && (iousOwedByMe > 0 || iousOwedToMe > 0) && (
+          <div className="mt-1.5 text-[11px] text-text-muted">
+            Includes{" "}
+            {iousOwedByMe > 0 && (
+              <span>
+                {formatBalance(iousOwedByMe, homeCurrency, {
+                  roundWholeAbove1000: true,
+                })}{" "}
+                you owe
+              </span>
+            )}
+            {iousOwedByMe > 0 && iousOwedToMe > 0 && " · "}
+            {iousOwedToMe > 0 && (
+              <span>
+                {formatBalance(iousOwedToMe, homeCurrency, {
+                  roundWholeAbove1000: true,
+                })}{" "}
+                owed to you
+              </span>
+            )}
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2 text-xs">
           <StreakBadge
             streak={streak}
@@ -526,6 +573,28 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
             <ChevronRight className="h-4 w-4 text-text-muted" />
           </Link>
+
+          {isOperator && (
+            <Link
+              href="/app/ious"
+              className="mt-2 flex items-center justify-between rounded-card border border-text-primary/8 bg-bg-tertiary p-4 transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-primary">
+                  <ArrowLeftRight className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-text-primary">
+                    Money in &amp; out
+                  </div>
+                  <div className="text-[11px] text-text-muted">
+                    IOUs and transfers between your businesses
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </Link>
+          )}
 
           {hasCreditCards && (
             <Link

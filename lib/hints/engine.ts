@@ -1,6 +1,6 @@
 import { composeHintBody } from "@/lib/anthropic";
 import { createClient } from "@/lib/supabase/server";
-import type { Account, Profile } from "@/lib/types";
+import type { Account, Iou, Profile } from "@/lib/types";
 import { HINT_REGISTRY } from "./registry";
 import { SEVERITY_SCORE, type UserContext } from "./types";
 
@@ -66,13 +66,24 @@ export async function runHintsEngine(
 
     const accounts = (accountsRes.data ?? []) as Account[];
 
+    // IOUs (operator-only). Cheap query; passes into ctx for H-305/H-306.
+    let ious: Iou[] = [];
+    if (profile.is_operator) {
+      const { data: iouRows } = await supabase
+        .from("ious")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "active");
+      ious = (iouRows ?? []) as Iou[];
+    }
+
     const dedupKeys = new Set(
       (activeHintsRes.data ?? []).map((h) =>
         dedupKey(h.hint_template_id as string, h.related_account_id as string | null)
       )
     );
 
-    const ctx: UserContext = { userId, profile, accounts };
+    const ctx: UserContext = { userId, profile, accounts, ious };
 
     const results = await Promise.all(
       HINT_REGISTRY.map(async (evaluator) => {

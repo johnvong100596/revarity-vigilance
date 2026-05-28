@@ -1,4 +1,4 @@
-import type { Account, Profile } from "@/lib/types";
+import type { Account, Iou, Profile } from "@/lib/types";
 
 export type HintSeverity = "pay_attention" | "opportunity" | "strategic";
 
@@ -6,6 +6,9 @@ export interface UserContext {
   userId: string;
   profile: Profile;
   accounts: Account[];
+  /** Active IOUs for the user (v1.1 WS6). Empty for non-operators. Hints
+   *  that only need account data can ignore this. */
+  ious?: Iou[];
 }
 
 export interface HintFireResult {

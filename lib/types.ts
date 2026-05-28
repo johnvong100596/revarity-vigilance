@@ -94,6 +94,45 @@ export interface Entity {
   updated_at: string;
 }
 
+export type IouDirection = "owed_to_me" | "i_owe";
+export type IouStatus = "active" | "settled";
+
+export interface IouRecurring {
+  frequency: "monthly";
+  day_of_month: number; // 1-31, clamped at runtime
+}
+
+export interface Iou {
+  id: string;
+  user_id: string;
+  entity_id: string | null;
+  counterparty_name: string;
+  amount: number;
+  currency: string;
+  direction: IouDirection;
+  due_date: string | null; // YYYY-MM-DD
+  recurring: IouRecurring | null;
+  status: IouStatus;
+  notes: string | null;
+  created_at: string;
+  settled_at: string | null;
+  updated_at: string;
+}
+
+export interface InterEntityFlow {
+  id: string;
+  user_id: string;
+  from_entity_id: string;
+  to_entity_id: string;
+  amount: number;
+  currency: string;
+  purpose: string | null;
+  flow_date: string;
+  status: IouStatus;
+  created_at: string;
+  settled_at: string | null;
+}
+
 export type HintCategory = "pay_attention" | "opportunity" | "strategic";
 export type HintStatus = "active" | "dismissed" | "acted" | "muted";
 
