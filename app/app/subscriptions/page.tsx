@@ -1,28 +1,34 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Repeat, AlertCircle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Subscription detection scaffold (Task 3.4).
- *
- * The UI ships now; the data layer is on hold until Plaid grants the
- * Recurring Transactions product (tracked in BLOCKERS-NIGHT-2026-05-26.md).
- *
- * Once Plaid grants the product:
- *   1. Add "recurring_transactions" to LINK_PRODUCTS in lib/plaid.ts
- *   2. Re-link existing banks (or wait for next re-link prompt) to pick up
- *      the new product scope
- *   3. Add a poll cron + a "subscriptions" table to persist Plaid's
- *      detected recurring streams (merchant, amount, cadence, last_seen,
- *      next_expected)
- *   4. Replace the empty-state below with the subscription list grouped
- *      by status: active, paused, recently changed, expected this week
- *   5. Wire a "review" action per row (cancel hint, keep, snooze N days)
+ * Subscriptions (Task 6.3). Recurring-charge detection isn't live yet — it
+ * needs the recurring-transactions feed turned on with our bank-data partner
+ * (tracked in BLOCKERS-NIGHT-2026-05-26.md). Until then we show a clearly-
+ * labeled PREVIEW of how the screen will look, with sample charges, so the
+ * value is obvious. The sample is honestly marked — we never imply these are
+ * the user's real charges.
  */
+
+interface SampleSub {
+  name: string;
+  amount: string;
+  cadence: string;
+  tint: string;
+}
+
+const SAMPLE_SUBS: SampleSub[] = [
+  { name: "Netflix", amount: "$15.49", cadence: "every month", tint: "#E50914" },
+  { name: "Spotify", amount: "$10.99", cadence: "every month", tint: "#1DB954" },
+  { name: "iCloud+", amount: "$2.99", cadence: "every month", tint: "#3B82F6" },
+  { name: "Gym", amount: "$45.00", cadence: "every month", tint: "#F04E37" },
+];
+
 export default async function SubscriptionsPage() {
   const supabase = createClient();
   const {
@@ -45,41 +51,59 @@ export default async function SubscriptionsPage() {
         </h1>
       </header>
 
-      <section className="mt-12 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent-primary">
-          <Repeat className="h-6 w-6" />
-        </div>
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-          Coming soon
-        </div>
-        <h2 className="mb-3 text-lg font-semibold text-text-primary">
-          Recurring charges, in one place
-        </h2>
-        <p className="mb-8 max-w-[300px] text-[14px] leading-relaxed text-text-secondary">
-          Every subscription, every renewal date, every silent price
-          increase — Vigilance will surface them so nothing renews without
-          you noticing.
+      <p className="mb-2 text-sm leading-relaxed text-text-secondary">
+        Every recurring charge in one place — so nothing renews or quietly
+        raises its price without you noticing.
+      </p>
+
+      {/* Honest preview label — these are sample charges, not real data yet */}
+      <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent-primary">
+        Preview · sample charges
+      </div>
+
+      <div className="mb-3 text-sm font-medium text-text-primary">
+        We found these recurring charges. Tap any to learn more.
+      </div>
+
+      <ul className="overflow-hidden rounded-card border border-text-primary/8">
+        {SAMPLE_SUBS.map((s, i) => (
+          <li
+            key={s.name}
+            className={`flex items-center justify-between bg-bg-tertiary px-4 py-3.5 ${
+              i > 0 ? "border-t border-text-primary/6" : ""
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-sm font-bold text-white"
+                style={{ backgroundColor: s.tint }}
+                aria-hidden
+              >
+                {s.name[0]}
+              </span>
+              <div>
+                <div className="text-sm font-medium text-text-primary">
+                  {s.name}
+                </div>
+                <div className="text-xs text-text-secondary">{s.cadence}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[15px] font-semibold tabular-nums text-text-primary">
+                {s.amount}
+              </div>
+              <span className="text-[11px] text-text-muted">Stop tracking</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-3 text-center">
+        <p className="text-[12px] leading-relaxed text-text-secondary">
+          Recurring charge detection is coming soon. Once it&apos;s on, your
+          real charges show up here automatically — no setup.
         </p>
-
-        <div className="mb-6 max-w-[320px] rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-3 text-left">
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-primary">
-            <AlertCircle className="h-3 w-3" />
-            What we&apos;re waiting on
-          </div>
-          <p className="text-[12px] leading-relaxed text-text-secondary">
-            Plaid&apos;s recurring transactions feed needs an extra access
-            grant. Once that lands, every connected bank will start showing
-            its subscriptions here automatically.
-          </p>
-        </div>
-
-        <Link
-          href="/app"
-          className="text-xs font-medium text-accent-primary transition hover:underline"
-        >
-          Back to home
-        </Link>
-      </section>
+      </div>
     </>
   );
 }

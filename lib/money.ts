@@ -63,6 +63,13 @@ export interface FormatBalanceOptions {
   withSymbol?: boolean;
   showSign?: boolean;
   showZeroDecimals?: boolean;
+  /**
+   * Big-number mode (Task 6.4): drop the cents when the amount is ≥ 1000,
+   * so a prominent figure reads "$1,247,833" not "$1,247,832.50". Opt-in —
+   * detail/check-in screens still show exact cents. No effect on
+   * zero-minor-unit currencies like PYG.
+   */
+  roundWholeAbove1000?: boolean;
 }
 
 export function formatBalance(
@@ -70,13 +77,21 @@ export function formatBalance(
   currency: Currency,
   options: FormatBalanceOptions = {}
 ): string {
-  const { withSymbol = true, showSign = false, showZeroDecimals = true } = options;
-  const decimals = MINOR_UNITS[currency];
+  const {
+    withSymbol = true,
+    showSign = false,
+    showZeroDecimals = true,
+    roundWholeAbove1000 = false,
+  } = options;
+  let decimals = MINOR_UNITS[currency];
   const value = toDecimal(amount);
+  if (roundWholeAbove1000 && value.abs().greaterThanOrEqualTo(1000)) {
+    decimals = 0;
+  }
   const fractionDigits = showZeroDecimals ? decimals : value.decimalPlaces();
 
   const formatter = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: Math.min(fractionDigits, decimals),
     maximumFractionDigits: decimals,
   });
 

@@ -250,7 +250,11 @@ export default async function HomePage() {
     <>
       {needsLocaleDetect && <LocaleDetector />}
       {showWelcome && (
-        <WelcomeMoment netWorthFormatted={formatBalance(netWorth, homeCurrency)} />
+        <WelcomeMoment
+          netWorthFormatted={formatBalance(netWorth, homeCurrency, {
+            roundWholeAbove1000: true,
+          })}
+        />
       )}
 
       {/* Top bar */}
@@ -293,7 +297,7 @@ export default async function HomePage() {
           </span>
         </div>
         <div className="mt-2 text-[44px] font-bold leading-none tracking-[-0.03em] tabular-nums text-text-primary">
-          {formatBalance(netWorth, homeCurrency)}
+          {formatBalance(netWorth, homeCurrency, { roundWholeAbove1000: true })}
         </div>
         {showWeekChange && weekChange !== null && (
           <div

@@ -19,9 +19,9 @@ interface AskVigilanceClientProps {
 }
 
 const PROMPT_SEEDS = [
-  "What's the biggest risk I'm carrying right now?",
-  "Where should I focus my attention this month?",
-  "What's changed about my money in the last 90 days?",
+  "How am I doing this month?",
+  "Why is that hint showing up?",
+  "Should I worry about my credit card balance?",
 ];
 
 export function AskVigilanceClient({
