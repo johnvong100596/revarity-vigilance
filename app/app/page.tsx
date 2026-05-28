@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { AccountRow } from "@/components/AccountRow";
+import { EntityFilter } from "@/components/EntityFilter";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { LocaleDetector } from "@/components/LocaleDetector";
 import { PayThisWeek } from "@/components/PayThisWeek";
@@ -32,7 +33,7 @@ import {
   toDecimal,
   type Currency,
 } from "@/lib/money";
-import type { Account, Hint, Profile } from "@/lib/types";
+import type { Account, Entity, Hint, Profile } from "@/lib/types";
 
 const HINT_ACCENT: Record<Hint["category"], string> = {
   pay_attention: "border-l-hint-pay-attention",
@@ -58,8 +59,13 @@ const HINT_LABEL_TEXT: Record<Hint["category"], string> = {
   strategic: "Strategic",
 };
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams: { entity?: string };
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
   const supabase = createClient();
+  const entityFilter = searchParams?.entity ?? null; // null | "<uuid>" | "untagged"
 
   const {
     data: { user },
@@ -68,12 +74,12 @@ export default async function HomePage() {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id, timezone, welcomed, locale_detected, created_at")
+    .select("home_currency, awareness_streak, decay_warnings_enabled, active_workspace_id, timezone, welcomed, locale_detected, is_operator, created_at")
     .eq("id", user.id)
     .single();
   const profile = (profileRow ?? null) as Pick<
     Profile,
-    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id" | "timezone" | "welcomed" | "locale_detected" | "created_at"
+    "home_currency" | "awareness_streak" | "decay_warnings_enabled" | "active_workspace_id" | "timezone" | "welcomed" | "locale_detected" | "is_operator" | "created_at"
   > | null;
   const workspaceId = profile?.active_workspace_id;
   if (!workspaceId) redirect("/login");
@@ -137,7 +143,28 @@ export default async function HomePage() {
       .lte("due_date", addDaysISO(today, 35)),
   ]);
 
-  const accounts: Account[] = accountsRes.data ?? [];
+  const allAccounts: Account[] = accountsRes.data ?? [];
+
+  // Operator-tier entity filter (WS5). Non-operators see no filter chips
+  // and never narrow the account set. Operators can scope every downstream
+  // calc (net worth, projection, hints, pay-this-week, credit, etc.) by
+  // picking a chip; default is "All" (combined view), matching grandma UX.
+  const isOperator = profile?.is_operator ?? false;
+  let entities: Entity[] = [];
+  if (isOperator) {
+    const { data: entRows } = await supabase
+      .from("entities")
+      .select("*")
+      .order("is_personal", { ascending: false })
+      .order("created_at", { ascending: true });
+    entities = (entRows ?? []) as Entity[];
+  }
+
+  const accounts: Account[] = !entityFilter
+    ? allAccounts
+    : entityFilter === "untagged"
+      ? allAccounts.filter((a) => a.entity_id == null)
+      : allAccounts.filter((a) => a.entity_id === entityFilter);
   const hints: Hint[] = hintsRes.data ?? [];
   const snapshots90d: RawSnapshot[] = (snapshotsRes.data ?? []) as RawSnapshot[];
   const checkinDates: string[] = Array.from(
@@ -316,7 +343,11 @@ export default async function HomePage() {
             title="What you'd have if you sold everything and paid off everything"
             className="cursor-help underline decoration-text-muted/30 decoration-dotted underline-offset-2"
           >
-            Net worth
+            {entityFilter && entityFilter !== "untagged"
+              ? `${entities.find((e) => e.id === entityFilter)?.name ?? "Filtered"} net worth`
+              : entityFilter === "untagged"
+                ? "Untagged net worth"
+                : "Net worth"}
           </span>
           <span className="ml-2 rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold text-accent-primary">
             {homeCurrency}
@@ -349,6 +380,12 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Operator-only entity filter — narrows net worth, payments, accounts,
+          and hints to the selected business */}
+      {isOperator && entities.length > 0 && (
+        <EntityFilter entities={entities} selected={entityFilter} />
+      )}
 
       {hasAccounts ? (
         <>

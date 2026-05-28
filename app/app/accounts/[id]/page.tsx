@@ -4,9 +4,10 @@ import { ArrowLeft } from "lucide-react";
 
 import { AccountDetailClient, type SnapshotPoint } from "./account-detail-client";
 import { BankIcon } from "@/components/BankIcon";
+import { EntityAssign } from "@/components/EntityAssign";
 import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import { createClient } from "@/lib/supabase/server";
-import type { Account } from "@/lib/types";
+import type { Account, Entity } from "@/lib/types";
 
 interface AccountDetailPageProps {
   params: { id: string };
@@ -49,6 +50,24 @@ export default async function AccountDetailPage({
       account.institution_id,
     ]).catch(() => ({}) as Record<string, InstitutionLogo>);
     logo = map[account.institution_id] ?? null;
+  }
+
+  // Operator: load entities + show the assignment selector. Non-operators
+  // never see the entity UI on accounts.
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("is_operator")
+    .eq("id", user.id)
+    .single();
+  const isOperator = Boolean(profileRow?.is_operator);
+  let entities: Entity[] = [];
+  if (isOperator) {
+    const { data } = await supabase
+      .from("entities")
+      .select("*")
+      .order("is_personal", { ascending: false })
+      .order("created_at", { ascending: true });
+    entities = (data ?? []) as Entity[];
   }
 
   const snapshots: SnapshotPoint[] = (snapshotsRes.data ?? []).map((s) => ({
@@ -101,6 +120,16 @@ export default async function AccountDetailPage({
           )}
         </div>
       </div>
+
+      {isOperator && entities.length > 0 && (
+        <div className="mb-6">
+          <EntityAssign
+            accountId={account.id}
+            currentEntityId={account.entity_id}
+            entities={entities}
+          />
+        </div>
+      )}
 
       <AccountDetailClient account={account} snapshots={snapshots} />
     </>
