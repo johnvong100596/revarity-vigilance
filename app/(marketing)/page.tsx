@@ -4,6 +4,9 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowUpRight,
+  Eye,
+  Lock,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 
@@ -72,20 +75,20 @@ export default async function LandingPage() {
       <section className="relative mx-auto max-w-[1200px] px-6 pb-24 pt-16 md:px-10 md:pb-40 md:pt-28">
         <div className="mx-auto max-w-[1000px] text-center">
           <h1 className="font-fraunces text-balance text-[52px] font-semibold leading-[0.95] tracking-[-0.04em] text-text-primary md:text-[112px]">
-            Watch your money.
+            Your money. In one place.
             <br />
-            <span className="text-text-secondary">Or watch it drift.</span>
+            <span className="text-text-secondary">In plain English.</span>
           </h1>
           <p className="mx-auto mt-8 max-w-[540px] text-base leading-relaxed text-text-secondary md:mt-10 md:text-xl">
-            A 30-second daily ritual against financial drift. Built for people
-            who&apos;ve outgrown spreadsheets but don&apos;t need another budgeting app.
+            Stop checking 4 bank apps. Start checking one number — a calm
+            30-second daily look at where you actually stand.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 md:mt-12 md:flex-row md:gap-4">
             <Link
               href="/signup"
               className="group inline-flex items-center gap-2 rounded-full bg-accent-primary px-8 py-4 text-base font-semibold text-white transition hover:opacity-90"
             >
-              Get started
+              See your net worth in 60 seconds
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
             <Link
@@ -109,6 +112,50 @@ export default async function LandingPage() {
           <Stat top="30 seconds" bottom="daily check-in" />
           <Stat top="4 currencies" bottom="USD · CAD · EUR · PYG" />
           <Stat top="6 expert lenses" bottom="growing weekly" />
+        </div>
+      </AnimatedSection>
+
+      {/* ─── WHY VIGILANCE (3-column differentiation) ─── */}
+      <AnimatedSection className="relative mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-32">
+        <div className="mx-auto max-w-[720px] text-center">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-primary">
+            Why Vigilance
+          </div>
+          <h2 className="mt-4 font-fraunces text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] md:text-[56px]">
+            You don&apos;t need another budgeting app.
+          </h2>
+        </div>
+        <div className="mx-auto mt-16 grid max-w-[1000px] grid-cols-1 gap-4 md:grid-cols-3">
+          <CompareColumn
+            title="What you're doing now"
+            tone="muted"
+            items={[
+              "Check 4–7 bank apps every week",
+              "Mental math in your head",
+              "Don't actually know your net worth",
+              "A spreadsheet that's always out of date",
+            ]}
+          />
+          <CompareColumn
+            title="What other apps want"
+            tone="muted"
+            items={[
+              "Categorize every transaction",
+              "Build a budget with envelopes",
+              "Track every single dollar",
+              "Become a finance person",
+            ]}
+          />
+          <CompareColumn
+            title="What Vigilance does"
+            tone="accent"
+            items={[
+              "Your real net worth, in one number",
+              "A 30-second daily check-in",
+              "A heads-up when something needs your eyes",
+              "You don't have to change who you are",
+            ]}
+          />
         </div>
       </AnimatedSection>
 
@@ -329,9 +376,23 @@ export default async function LandingPage() {
               href="/signup"
               className="group inline-flex items-center gap-2 rounded-full bg-accent-primary px-8 py-4 text-base font-semibold text-white transition hover:opacity-90"
             >
-              Get started
+              See your net worth in 60 seconds
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </Link>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent-primary" />
+              Plaid-secured
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-accent-primary" />
+              Encrypted at rest
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Eye className="h-3.5 w-3.5 text-accent-primary" />
+              Read-only — we can never move your money
+            </span>
           </div>
         </div>
       </AnimatedSection>
@@ -390,6 +451,53 @@ function Stat({ top, bottom }: { top: string; bottom: string }) {
         {top}
       </div>
       <div className="mt-2 text-sm text-text-secondary">{bottom}</div>
+    </div>
+  );
+}
+
+// ─── Why-Vigilance comparison column ─────────────────────────────
+function CompareColumn({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  tone: "muted" | "accent";
+}) {
+  const isAccent = tone === "accent";
+  return (
+    <div
+      className={`rounded-card border p-6 ${
+        isAccent
+          ? "border-accent-primary/30 bg-accent-soft"
+          : "border-text-primary/8 bg-bg-tertiary"
+      }`}
+    >
+      <div
+        className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+          isAccent ? "text-accent-primary" : "text-text-muted"
+        }`}
+      >
+        {title}
+      </div>
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => (
+          <li
+            key={item}
+            className={`flex items-start gap-2 text-sm leading-snug ${
+              isAccent ? "text-text-primary" : "text-text-secondary"
+            }`}
+          >
+            <span
+              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+                isAccent ? "bg-accent-primary" : "bg-text-primary/20"
+              }`}
+            />
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

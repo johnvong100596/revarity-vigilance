@@ -259,7 +259,7 @@ export default async function SettingsPage() {
 
       {/* Plaid connections */}
       <section className="mb-10">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-1 flex items-center justify-between">
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">
             Connected banks
           </div>
@@ -272,6 +272,10 @@ export default async function SettingsPage() {
             </Link>
           )}
         </div>
+        <p className="mb-4 text-[11px] text-text-muted">
+          Encrypted and read-only. We can see your balances but can never move
+          your money.
+        </p>
         {plaidItems.length === 0 ? (
           <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 py-4 text-center">
             <p className="text-xs leading-relaxed text-text-secondary">
