@@ -42,6 +42,24 @@ function isStaleRow(fetchedAt: string, hasLogo: boolean): boolean {
   return age > (hasLogo ? CACHE_TTL_MS : EMPTY_RETRY_TTL_MS);
 }
 
+// L3: Plaid is a trusted source, but defend the DOM anyway — only store a
+// logo that's well-formed base64 within a sane size (a real PNG icon is a
+// few KB; cap at ~512KB of base64). Anything off → drop to the fallback.
+const MAX_LOGO_BASE64_LEN = 512 * 1024;
+function sanitizeLogoBase64(raw: string | null): string | null {
+  if (!raw) return null;
+  if (raw.length > MAX_LOGO_BASE64_LEN) return null;
+  // Standard base64 alphabet only (no data: prefix expected from Plaid)
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(raw)) return null;
+  return raw;
+}
+
+// Only keep a plausible hex color; otherwise null (BankIcon handles null).
+function sanitizeColor(raw: string | null): string | null {
+  if (!raw) return null;
+  return /^#[0-9a-fA-F]{3,8}$/.test(raw) ? raw : null;
+}
+
 /**
  * Fetch a single institution's logo, using the cache when fresh.
  * Best-effort: returns null (and caches an empty row to avoid hammering
@@ -83,8 +101,8 @@ export async function fetchAndCacheInstitutionLogo(
     });
     const inst = res.data.institution;
     name = inst.name ?? null;
-    logo = inst.logo ?? null;
-    color = inst.primary_color ?? null;
+    logo = sanitizeLogoBase64(inst.logo ?? null);
+    color = sanitizeColor(inst.primary_color ?? null);
   } catch (e) {
     console.warn(`[institution-logos] Plaid fetch failed for ${institutionId}`, e);
     // Still upsert an (empty) row so we show the fallback and don't retry

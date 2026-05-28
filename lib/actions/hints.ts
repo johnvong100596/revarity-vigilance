@@ -48,14 +48,16 @@ export async function dismissHint(input: {
     .eq("id", hintId);
   if (error) throw new Error(`dismiss failed: ${error.message}`);
 
-  // Log the dismissal + reason for future targeting (Task 3.1). Best-effort.
-  await supabase.from("hint_events").insert({
+  // Log the dismissal + reason for future targeting (Task 3.1). Best-effort —
+  // a failed analytics write must never break the dismiss, but we log it (L2).
+  const { error: eventErr } = await supabase.from("hint_events").insert({
     hint_id: hintId,
     user_id: user.id,
     workspace_id: (existing?.workspace_id as string | null) ?? null,
     event_type: "dismissed",
     reason: reason ?? null,
   });
+  if (eventErr) console.warn("[hints] dismiss event log failed", eventErr);
 
   revalidatePath("/app/hints");
   revalidatePath("/app");
@@ -86,13 +88,14 @@ export async function resolveHint(input: { hintId: string }) {
     .eq("id", hintId);
   if (error) throw new Error(`resolve failed: ${error.message}`);
 
-  await supabase.from("hint_events").insert({
+  const { error: eventErr } = await supabase.from("hint_events").insert({
     hint_id: hintId,
     user_id: user.id,
     workspace_id: (existing?.workspace_id as string | null) ?? null,
     event_type: "resolved",
     reason: null,
   });
+  if (eventErr) console.warn("[hints] resolve event log failed", eventErr);
 
   revalidatePath("/app/hints");
   revalidatePath("/app");
