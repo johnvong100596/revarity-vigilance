@@ -144,13 +144,13 @@ export default function TermsPage() {
             </li>
             <li>
               That balances will always match your bank to the cent. Plaid
-              syncs on a delay; we surface the latest data we have. For
+              updates on a delay; we surface the latest data we have. For
               high-stakes decisions, check your bank directly.
             </li>
           </ul>
         </Section>
 
-        <Section title="Liability">
+        <Section title="Our responsibility">
           <p>
             Vigilance is provided &ldquo;as is.&rdquo; To the maximum extent
             allowed by law, Revarity is not liable for any losses, missed
@@ -162,7 +162,7 @@ export default function TermsPage() {
 
         <Section title="Closing your account">
           <p>
-            You can disconnect banks and archive accounts anytime from
+            You can unlink banks and archive accounts anytime from
             Settings. To fully delete everything, email{" "}
             <a
               href="mailto:coo@revarity.com"

@@ -87,10 +87,9 @@ export default function PrivacyPage() {
             a programming bug.
           </p>
           <p>
-            Bank connection credentials (the secret tokens Plaid issues us
-            so we can refresh your balances) are encrypted with Supabase
-            Vault using pgsodium. Plaintext credentials never persist to
-            disk.
+            The access keys Plaid issues us so we can refresh your balances
+            are encrypted with Supabase Vault using pgsodium. Plain text
+            never persists to disk.
           </p>
         </Section>
 
@@ -105,7 +104,7 @@ export default function PrivacyPage() {
             If you ask Vigilance a question through the &ldquo;Ask&rdquo;
             panel, we send the question plus a context summary (your
             account names, balances, and active hints) to Anthropic&apos;s
-            Claude API to compose a response. Anthropic does not store or
+            Claude to compose a response. Anthropic does not store or
             train on that data per their{" "}
             <a
               href="https://www.anthropic.com/legal/commercial-terms"
@@ -178,13 +177,13 @@ export default function PrivacyPage() {
         <Section title="Security">
           <p>
             We use industry-standard encryption (TLS 1.3 in transit,
-            pgsodium-managed AES-256-GCM at rest for bank tokens). We
-            don&apos;t store your bank password — Plaid handles authentication
-            on your bank&apos;s own login page and only returns us a refresh
-            token. We don&apos;t store your social security number, your
-            address, or any government identifier. We don&apos;t store
-            transactions yet — only balances, account metadata, and what you
-            type into the app.
+            pgsodium-managed AES-256-GCM at rest for access keys). We
+            don&apos;t store your bank password — Plaid handles sign-in
+            on your bank&apos;s own login page and only returns us a
+            refresh key. We don&apos;t store your social security number,
+            your address, or any government identifier. We don&apos;t
+            store transactions yet — only balances, account metadata,
+            and what you type into the app.
           </p>
         </Section>
 

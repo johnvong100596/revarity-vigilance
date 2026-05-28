@@ -21,6 +21,21 @@ export function WelcomeMoment({ netWorthFormatted }: WelcomeMomentProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    // M-2 fix: a sessionStorage guard guarantees we don't replay within the
+    // same browser session even if the markWelcomed() write fails (network
+    // hiccup, RLS race). The DB write is fire-and-forget for snappy UX; the
+    // guard makes a persistently-failing write a one-time annoyance, not a
+    // recurring full-screen takeover. Once the DB write succeeds, server
+    // gating (`!welcomed`) keeps it from firing across sessions.
+    try {
+      if (sessionStorage.getItem("vig_welcome_shown") === "1") {
+        setVisible(false);
+        return;
+      }
+      sessionStorage.setItem("vig_welcome_shown", "1");
+    } catch {
+      /* sessionStorage may be unavailable (Safari private) — fall through */
+    }
     markWelcomed().catch(() => {});
     const fade = setTimeout(() => setVisible(false), 3000);
     return () => clearTimeout(fade);
