@@ -6,7 +6,8 @@ import type { Account, Iou } from "@/lib/types";
  * how many days the cash will last at the current 30-day net burn.
  *
  * Approximation given the data we have today:
- *   currentCash    = sum of bank/cash account balances (assets only)
+ *   currentCash    = sum of bank/cash balances + cash-like investment
+ *                    accounts (HISA, money-market) — assets only
  *   incoming(30d)  = owed_to_me IOUs due in next 30d + recurring owed_to_me
  *                    (monthly = once)
  *   outgoing(30d)  = i_owe IOUs due in next 30d + recurring i_owe (monthly
@@ -57,6 +58,26 @@ function nextMonthlyOccurrenceWithinDays(
   return diffDays >= 0 && diffDays <= days;
 }
 
+/**
+ * Liquid cash for runway: bank and cash accounts always count. Investment-typed
+ * accounts count only when the subtitle names a cash-like instrument (HISA,
+ * money-market, high-interest savings, operating cash) — operators routinely
+ * park working capital there. A plain brokerage/stock balance stays out:
+ * counting it would overstate runway and hand a survival-mode operator false
+ * comfort, the opposite of what this number is for.
+ */
+const CASH_LIKE_SUBTITLE =
+  /\b(hisa|money market|high.?interest|savings|operating|cash)\b/i;
+
+function isLiquidCash(a: Account): boolean {
+  if (a.category !== "asset") return false;
+  if (a.account_type === "bank" || a.account_type === "cash") return true;
+  if (a.account_type === "investment" && a.subtitle != null) {
+    return CASH_LIKE_SUBTITLE.test(a.subtitle);
+  }
+  return false;
+}
+
 export function calculateRunway(opts: {
   accounts: Account[];
   ious: Iou[];
@@ -67,12 +88,10 @@ export function calculateRunway(opts: {
   const windowDays = opts.windowDays ?? 30;
   const now = opts.now ?? new Date(NOW_MS());
 
-  // Cash = bank + cash account-types (not investments, not crypto, not debt)
-  const currentCash = opts.accounts.reduce((sum, a) => {
-    if (a.category !== "asset") return sum;
-    if (a.account_type !== "bank" && a.account_type !== "cash") return sum;
-    return sum + Number(a.balance);
-  }, 0);
+  const currentCash = opts.accounts.reduce(
+    (sum, a) => (isLiquidCash(a) ? sum + Number(a.balance) : sum),
+    0
+  );
 
   // IOU contributions in the next windowDays
   let incoming = 0;
