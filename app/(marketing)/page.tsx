@@ -12,6 +12,8 @@ import {
 
 import { AnimatedSection } from "@/components/marketing/AnimatedSection";
 import { HeroOrb } from "@/components/marketing/HeroOrb";
+import { InstallButton } from "@/components/marketing/InstallButton";
+import { InstallExperience } from "@/components/marketing/InstallExperience";
 import { ParallaxBlock } from "@/components/marketing/ParallaxBlock";
 import { createClient } from "@/lib/supabase/server";
 
@@ -94,6 +96,9 @@ export default async function LandingPage() {
             >
               Sign in
             </Link>
+          </div>
+          <div className="mt-5 flex justify-center">
+            <InstallButton variant="hero" />
           </div>
         </div>
 
@@ -396,6 +401,18 @@ export default async function LandingPage() {
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-text-primary/10">
+        {/* Install band */}
+        <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-5 border-b border-text-primary/10 px-6 py-10 sm:flex-row sm:items-center sm:justify-between md:px-10">
+          <div>
+            <div className="text-base font-semibold tracking-tight text-text-primary">
+              Take Vigilance with you
+            </div>
+            <div className="mt-1 text-sm text-text-secondary">
+              Available on iPhone, Android, and Desktop. Install in 30 seconds.
+            </div>
+          </div>
+          <InstallButton variant="footer" />
+        </div>
         <div className="mx-auto flex max-w-[1200px] flex-col items-start justify-between gap-6 px-6 py-10 md:flex-row md:items-center md:gap-12 md:px-10">
           <div className="text-base font-semibold tracking-tight">
             Vigilance
@@ -436,6 +453,9 @@ export default async function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Install modal + smart banner (client) */}
+      <InstallExperience />
     </main>
   );
 }
