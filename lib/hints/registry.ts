@@ -4,6 +4,8 @@ import { H101 } from "./H-101-mortgage-renewal";
 import { H103 } from "./H-103-hisa-arbitrage";
 import { H201 } from "./H-201-portfolio-weighting";
 import { H202 } from "./H-202-tax-residency";
+import { H301 } from "./H-301-card-high-utilization";
+import { H302 } from "./H-302-total-utilization";
 import type { HintEvaluator } from "./types";
 
 // Edit this list to add or remove hints from the engine.
@@ -16,4 +18,6 @@ export const HINT_REGISTRY: HintEvaluator[] = [
   H103,
   H201,
   H202,
+  H301,
+  H302,
 ];

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   ChevronRight,
+  CreditCard,
   Lightbulb,
   Menu,
   Plus,
@@ -205,6 +206,12 @@ export default async function HomePage() {
   const hasAccounts = accounts.length > 0;
   const hasMixedCurrency =
     hasAccounts && accounts.some((a) => a.currency !== homeCurrency);
+  const hasCreditCards = accounts.some(
+    (a) =>
+      a.category === "debt" &&
+      a.credit_limit != null &&
+      Number(a.credit_limit) > 0
+  );
 
   // Onboarding (WS3). Silent locale detection runs once; the welcome moment
   // fires once after the first balance lands; the getting-started checklist
@@ -457,6 +464,28 @@ export default async function HomePage() {
             </div>
             <ChevronRight className="h-4 w-4 text-text-muted" />
           </Link>
+
+          {hasCreditCards && (
+            <Link
+              href="/app/credit"
+              className="mt-2 flex items-center justify-between rounded-card border border-text-primary/8 bg-bg-tertiary p-4 transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.05)]"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft text-accent-primary">
+                  <CreditCard className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-text-primary">
+                    Credit use
+                  </div>
+                  <div className="text-[11px] text-text-muted">
+                    How much of your credit you&apos;re using right now
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-text-muted" />
+            </Link>
+          )}
 
           <Link
             href="/app/subscriptions"
