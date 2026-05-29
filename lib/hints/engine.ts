@@ -1,4 +1,10 @@
 import { composeHintBody } from "@/lib/anthropic";
+import {
+  makeRateResolver,
+  normalizeAccountsToHome,
+  normalizeIousToHome,
+} from "@/lib/fx-resolver";
+import type { Currency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import type { Account, Iou, Profile } from "@/lib/types";
 import { HINT_REGISTRY } from "./registry";
@@ -83,7 +89,25 @@ export async function runHintsEngine(
       )
     );
 
-    const ctx: UserContext = { userId, profile, accounts, ious };
+    // Normalize all money to the home currency so every hint (utilization,
+    // portfolio split, runway) is currency-correct. No-op until the fx_rates
+    // feed is populated (normalize falls back to the raw row when a rate is
+    // missing), so single-currency users are unaffected.
+    const homeCurrency = (profile.home_currency as Currency) ?? "USD";
+    const resolveRate = await makeRateResolver(supabase);
+    const homeAccounts = await normalizeAccountsToHome(
+      accounts,
+      homeCurrency,
+      resolveRate
+    );
+    const homeIous = await normalizeIousToHome(ious, homeCurrency, resolveRate);
+
+    const ctx: UserContext = {
+      userId,
+      profile,
+      accounts: homeAccounts,
+      ious: homeIous,
+    };
 
     const results = await Promise.all(
       HINT_REGISTRY.map(async (evaluator) => {

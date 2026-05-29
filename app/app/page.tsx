@@ -31,8 +31,11 @@ import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos
 import type { RawSnapshot } from "@/lib/rituals";
 import { DEFAULT_TIMEZONE, addDaysISO, localDateISO } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
-import { convert } from "@/lib/fx";
-import { makeRateResolver } from "@/lib/fx-resolver";
+import {
+  makeRateResolver,
+  normalizeAccountsToHome,
+  normalizeIousToHome,
+} from "@/lib/fx-resolver";
 import {
   formatBalance,
   toDecimal,
@@ -170,6 +173,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     activeIous = (iouRes.data ?? []) as Iou[];
   }
 
+  // FX: one resolver for the whole render. Sums (net worth, runway, IOU
+  // totals) are computed in the home currency; the per-account list below
+  // still shows each account in its NATIVE currency. No-op until the fx_rates
+  // feed is populated (normalize falls back to the raw row when a rate is
+  // missing), so single-currency users are unaffected.
+  const homeCurrency: Currency = profile?.home_currency ?? "USD";
+  const resolveRate = await makeRateResolver(supabase);
+
   // Scope active IOUs by the entity filter just like accounts (untagged
   // bucket follows the same rules)
   const filteredIous: Iou[] = !entityFilter
@@ -177,10 +188,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     : entityFilter === "untagged"
       ? activeIous.filter((i) => i.entity_id == null)
       : activeIous.filter((i) => i.entity_id === entityFilter);
-  const iousOwedByMe = filteredIous
+  const filteredIousHome = await normalizeIousToHome(
+    filteredIous,
+    homeCurrency,
+    resolveRate
+  );
+  const iousOwedByMe = filteredIousHome
     .filter((i) => i.direction === "i_owe")
     .reduce((s, i) => s + Number(i.amount), 0);
-  const iousOwedToMe = filteredIous
+  const iousOwedToMe = filteredIousHome
     .filter((i) => i.direction === "owed_to_me")
     .reduce((s, i) => s + Number(i.amount), 0);
 
@@ -192,7 +208,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       ? allAccounts.filter((a) => a.entity_id == null)
       : allAccounts.filter((a) => a.entity_id === entityFilter);
   const runwaySummary = isOperator
-    ? calculateRunway({ accounts: runwayScopeAccounts, ious: filteredIous })
+    ? calculateRunway({
+        accounts: await normalizeAccountsToHome(
+          runwayScopeAccounts,
+          homeCurrency,
+          resolveRate
+        ),
+        ious: filteredIousHome,
+      })
     : null;
   const runwayScopeLabel =
     entityFilter && entityFilter !== "untagged"
@@ -231,39 +254,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     institutionName: (b.institution_name as string | null) ?? null,
     status: b.status as string,
   }));
-  const homeCurrency: Currency = profile?.home_currency ?? "USD";
   const streak = profile?.awareness_streak ?? 0;
   const topHint = hints[0] ?? null;
   const activeHintCount = hints.length;
 
-  // Net worth: assets minus debts, every balance converted to the home
-  // currency. The resolver reads the USD-base fx_rates feed (fx-refresh cron)
-  // and triangulates any pair. If a rate is missing (feed not populated yet)
-  // convert() throws and we fall back to the raw balance — i.e. same-currency
-  // users are unaffected, and multi-currency users get conversion once rates
-  // exist. Operator-tier IOUs add to the picture: money owed to you is an
-  // asset, money you owe is a debt. Non-operators contribute zero on both.
-  const resolveRate = await makeRateResolver(supabase);
-  const balanceHomeById = new Map<string, ReturnType<typeof toDecimal>>();
-  for (const a of accounts) {
-    try {
-      balanceHomeById.set(
-        a.id,
-        await convert(
-          a.balance,
-          (a.currency as Currency) ?? homeCurrency,
-          homeCurrency,
-          resolveRate
-        )
-      );
-    } catch {
-      balanceHomeById.set(a.id, toDecimal(a.balance));
-    }
-  }
-  const netWorth = accounts
+  // Net worth: assets minus debts, summed in the home currency. Each balance is
+  // converted via the fx_rates feed; a missing rate falls back to the raw value
+  // (see normalizeAccountsToHome), so single-currency users are unaffected. The
+  // per-account list above still shows each account in its native currency.
+  // Operator IOUs: money owed to you is an asset, money you owe is a debt.
+  const accountsHome = await normalizeAccountsToHome(
+    accounts,
+    homeCurrency,
+    resolveRate
+  );
+  const netWorth = accountsHome
     .reduce((sum, a) => {
-      const home = balanceHomeById.get(a.id) ?? toDecimal(a.balance);
-      const signed = home.times(a.category === "asset" ? 1 : -1);
+      const signed = toDecimal(a.balance).times(a.category === "asset" ? 1 : -1);
       return sum.plus(signed);
     }, toDecimal(0))
     .plus(toDecimal(iousOwedToMe))

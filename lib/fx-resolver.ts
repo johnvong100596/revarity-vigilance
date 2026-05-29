@@ -1,8 +1,9 @@
 import Decimal from "decimal.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { RateResolver } from "@/lib/fx";
+import { convert, type RateResolver } from "@/lib/fx";
 import type { Currency } from "@/lib/money";
+import type { Account, Iou } from "@/lib/types";
 
 /**
  * Build a RateResolver from the USD-base `fx_rates` table. It preloads the
@@ -42,4 +43,69 @@ export async function makeRateResolver(
     if (!f || !t || f.isZero()) return null;
     return t.dividedBy(f);
   };
+}
+
+/**
+ * Return copies of `accounts` with every money field (balance, min_payment,
+ * credit_limit) converted to `home` and `currency` set to `home`, so any
+ * consumer that sums them is currency-correct without changing its own code.
+ *
+ * Fail-safe: if an account's rate is missing the row is returned UNCHANGED
+ * (original value + original currency), so behavior is unchanged until the
+ * fx_rates feed is populated. apr is a rate, not money — left alone.
+ */
+export async function normalizeAccountsToHome(
+  accounts: Account[],
+  home: Currency,
+  resolveRate: RateResolver
+): Promise<Account[]> {
+  const out: Account[] = [];
+  for (const a of accounts) {
+    const from = (a.currency as Currency) ?? home;
+    if (from === home) {
+      out.push(a);
+      continue;
+    }
+    try {
+      const balance = (await convert(a.balance, from, home, resolveRate)).toNumber();
+      const min_payment =
+        a.min_payment == null
+          ? a.min_payment
+          : (await convert(a.min_payment, from, home, resolveRate)).toNumber();
+      const credit_limit =
+        a.credit_limit == null
+          ? a.credit_limit
+          : (await convert(a.credit_limit, from, home, resolveRate)).toNumber();
+      out.push({ ...a, balance, min_payment, credit_limit, currency: home });
+    } catch {
+      out.push(a); // missing rate → leave unchanged
+    }
+  }
+  return out;
+}
+
+/**
+ * Return copies of `ious` with `amount` converted to `home` and `currency` set
+ * to `home`. Same fail-safe as normalizeAccountsToHome.
+ */
+export async function normalizeIousToHome(
+  ious: Iou[],
+  home: Currency,
+  resolveRate: RateResolver
+): Promise<Iou[]> {
+  const out: Iou[] = [];
+  for (const i of ious) {
+    const from = (i.currency as Currency) ?? home;
+    if (from === home) {
+      out.push(i);
+      continue;
+    }
+    try {
+      const amount = (await convert(i.amount, from, home, resolveRate)).toNumber();
+      out.push({ ...i, amount, currency: home });
+    } catch {
+      out.push(i);
+    }
+  }
+  return out;
 }
