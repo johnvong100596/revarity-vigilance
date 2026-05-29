@@ -13,8 +13,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/app";
   const callbackError = searchParams.get("error");
+  const safeNext = next.startsWith("/") ? next : "/app";
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "sending" | "sent" | "verifying" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function sendMagicLink(e: React.FormEvent) {
@@ -36,6 +40,24 @@ function LoginForm() {
     setStatus("sent");
   }
 
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("verifying");
+    setErrorMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: "email",
+    });
+    if (error) {
+      setStatus("sent");
+      setErrorMsg(error.message);
+      return;
+    }
+    window.location.assign(safeNext);
+  }
+
   return (
     <div className="w-full max-w-[400px] space-y-8">
       <header className="space-y-3 text-center">
@@ -49,7 +71,8 @@ function LoginForm() {
           Welcome
         </h1>
         <p className="text-sm text-text-secondary">
-          We&apos;ll email you a link to sign in. No password to remember.
+          We&apos;ll email you a 6-digit code and a sign-in link — use
+          whichever&apos;s easier. No password to remember.
         </p>
       </header>
 
@@ -81,22 +104,56 @@ function LoginForm() {
         <Button
           type="submit"
           size="lg"
-          disabled={status === "sending" || !email}
+          disabled={status === "sending" || status === "verifying" || !email}
           className="w-full"
         >
-          {status === "sending" ? "Sending…" : "Email me a link"}
+          {status === "sending"
+            ? "Sending…"
+            : status === "sent" || status === "verifying"
+              ? "Resend"
+              : "Email me a code"}
         </Button>
-        {status === "sent" && (
-          <p className="text-center text-sm leading-relaxed text-positive">
-            Check your inbox at {email}. Sometimes it takes 30 seconds — and
-            peek in spam if it doesn&apos;t show up.
-          </p>
-        )}
       </form>
 
+      {(status === "sent" || status === "verifying") && (
+        <form onSubmit={verifyCode} className="space-y-4">
+          <p className="text-center text-sm leading-relaxed text-positive">
+            Sent to {email}. Type the 6-digit code from the email, or just tap
+            the link inside it. Can take 30 seconds — peek in spam too.
+          </p>
+          <div className="space-y-2">
+            <Label
+              htmlFor="code"
+              className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary"
+            >
+              6-digit code
+            </Label>
+            <Input
+              id="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="123456"
+            />
+          </div>
+          <Button
+            type="submit"
+            size="lg"
+            disabled={status === "verifying" || code.length < 6}
+            className="w-full"
+          >
+            {status === "verifying" ? "Signing you in…" : "Sign in"}
+          </Button>
+        </form>
+      )}
+
       <p className="text-center text-[11px] leading-relaxed text-text-muted">
-        Link not arriving? It expires after 1 hour, check your spam folder,
-        and email{" "}
+        Code or link not arriving? They expire after 1 hour, check your spam
+        folder, and email{" "}
         <a
           href="mailto:coo@revarity.com"
           className="text-text-secondary underline-offset-4 hover:underline"
