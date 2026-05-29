@@ -9,12 +9,15 @@ import {
   ToggleRow,
   WorkspaceSection,
 } from "./settings-client";
+import { BillingSection } from "@/components/BillingSection";
 import { OperatorSection } from "@/components/OperatorSection";
 import { ReferralCard } from "@/components/ReferralCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateProfile } from "@/lib/actions/settings";
+import { getEntitlement } from "@/lib/entitlements";
+import { isBillingConfigured } from "@/lib/stripe";
 import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos";
 import { CURRENCIES } from "@/lib/money";
 import { TIMEZONE_OPTIONS } from "@/lib/time";
@@ -44,6 +47,10 @@ export default async function SettingsPage() {
   const profile = (profileRow ?? null) as Profile | null;
   if (!profile?.active_workspace_id) redirect("/login");
   const workspaceId = profile.active_workspace_id;
+
+  // Plan / billing state for the BillingSection card.
+  const entitlement = await getEntitlement(supabase, user.id);
+  const billingConfigured = isBillingConfigured();
 
   const [archivedRes, plaidItemsRes, workspacesRes, membersRes, invitedCountRes, entitiesRes] =
     await Promise.all([
@@ -230,6 +237,12 @@ export default async function SettingsPage() {
         members={members}
         currentUserId={user.id}
         currentUserRole={myRole}
+      />
+
+      {/* Plan / billing (dormant until Stripe is configured) */}
+      <BillingSection
+        entitlement={entitlement}
+        billingConfigured={billingConfigured}
       />
 
       {/* Operator tier (default OFF — toggle reveals entity manager) */}
