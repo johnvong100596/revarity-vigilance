@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/app";
+  const callbackError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -51,6 +52,13 @@ function LoginForm() {
           We&apos;ll email you a link to sign in. No password to remember.
         </p>
       </header>
+
+      {callbackError && status === "idle" && (
+        <p className="rounded-lg bg-negative/10 px-4 py-3 text-center text-sm leading-relaxed text-negative">
+          That sign-in link didn&apos;t work — it may have expired or already
+          been opened. Enter your email below and we&apos;ll send a fresh one.
+        </p>
+      )}
 
       <form onSubmit={sendMagicLink} className="space-y-4">
         <div className="space-y-2">
