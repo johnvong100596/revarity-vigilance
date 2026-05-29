@@ -57,6 +57,42 @@ Harden: do delete+insert in one transactional RPC and require the full currency
 set before committing. Note: `EXCHANGERATE_API_KEY` exists in env — could move
 to the authenticated endpoint for reliability.
 
+---
+
+# Round 3 (deeper sweep: a11y, performance, onboarding/email)
+
+## FIXED this round
+- **🔴 CRITICAL self-inflicted regression — new signups were broken (redirect loop).** My `20260529120003_revarity_free_operator` migration redefined `handle_new_user()` from the original profiles-only version and dropped the workspace-creation logic a later migration had added — so new users got `active_workspace_id = NULL` → `/app`↔`/login` loop. Also dropped `referral_token`. **Fixed in prod** via `20260529120006`: restored workspace + referral_token + kept the revarity comp, and backfilled any window-affected users. Verified: 0 profiles without a workspace, 0 without a referral_token. (This is the most important catch of the night.)
+- **fx_rates query unbounded scan (perf H2)** — `makeRateResolver` now bounds to the last 7 days.
+- **Missing composite index (perf L1)** — added `idx_balance_snapshots_workspace_date` (migration `20260529120005`, applied).
+
+## FLAGGED — accessibility (needs a focused design pass with Cena; the "anyone can use it" bar)
+The full report is detailed; the high-impact items, NOT auto-fixed because they're
+design-system/brand decisions (colors, type scale):
+- **Contrast fails WCAG AA**: `text-muted` #8C8C8C (3.0–3.4:1), the accent #F04E37 for button text/links (3.59:1), decay-warning, crypto colors. Older eyes can't reliably read core copy + CTAs.
+- **Type too small**: `text-[10px]`/`text-[11px]` on essential content incl. the check-in swipe legend (the core daily ritual) and trust microcopy.
+- **Hover/`title`-only content invisible on touch** (the primary platform): the entire "Net worth" definition, account-field explanations, and the "how to fix a wrong APR" instruction.
+- **Tap targets < 44px**: header nav icons, the settings toggle, text-link actions.
+- **Color-only meaning**: utilization bar, net-worth delta, decay dot (colorblind/low-vision can't distinguish).
+- **Forms**: login + check-in inputs lack `<label>`/`aria-label`; errors aren't `role="alert"` (a blind user gets no feedback on a bad code).
+- **WelcomeMoment** full-screen takeover has no dialog semantics, focus trap, or dismiss control (timer-only); no `prefers-reduced-motion` anywhere.
+
+## FLAGGED — performance (optimizations; not urgent at zero users)
+- Cron routes: O(users) `getUserById` + per-user N+1 queries — batch before scaling.
+- `makeRateResolver` re-queried per request (page + hints engine) — wrap in `cache()` / TTL.
+- `select("*")` on the wide `accounts` table in 4 hot paths.
+- Home page: FX + operator `entities`/`ious` could fold into the first `Promise.all` (−2 serial hops).
+
+## FLAGGED — onboarding & email
+- **Email deliverability**: no `List-Unsubscribe` header (Gmail/Yahoo bulk rules → spam risk) and the opt-out is buried prose, not a link.
+- **DMARC**: `from` is `noreply@revarity.com` but links are `vigilance.revarity.com` — verify Resend/DNS authorizes the apex `revarity.com` for SPF/DKIM/DMARC, or switch the sender to the subdomain. (Needs a DNS check.)
+- **@revarity.com first-run**: comped users land with business UI (entities/runway/IOUs) and no explanation of why a personal-finance app shows "your businesses."
+- `scripts/render-emails.mjs`: in-file `node` usage instruction won't run a `.tsx` import; use `npm run render-emails` (tsx). Make the docs consistent.
+- Login "Resend" gives no visible confirmation a new code was sent.
+- Confirm `NEXT_PUBLIC_SITE_URL` is set in Vercel prod (email links fall back to a hardcoded URL otherwise).
+
+---
+
 ### 5. Still-open from the first audit (AUDIT-AUTONOMOUS-2026-05-29.md)
 Plaid sync never reconciles accounts; balances stored as `Math.abs` lose sign;
 `account_type` maps Plaid `credit`→`loan`; `profiles` UPDATE policy allows

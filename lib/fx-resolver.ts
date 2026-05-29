@@ -22,10 +22,16 @@ import type { Account, Iou } from "@/lib/types";
 export async function makeRateResolver(
   supabase: SupabaseClient
 ): Promise<RateResolver> {
+  // Only the most recent rows matter (newest-per-target wins below). Bound the
+  // scan to the last 7 days so the table — which grows by the fx-refresh cron
+  // daily — never turns this into an unbounded read. 7 days tolerates several
+  // missed cron runs before we'd fall back to native (no rate found).
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data } = await supabase
     .from("fx_rates")
     .select("target_currency, rate, captured_at")
     .eq("base_currency", "USD")
+    .gte("captured_at", sevenDaysAgo)
     .order("captured_at", { ascending: false });
 
   // Newest row per target wins (rows are sorted newest-first).
