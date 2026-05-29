@@ -4,21 +4,41 @@
 Vigilance from a Revarity-internal/branded tool into a sellable, multi-tenant
 SaaS. Pick a thread and I'll spec + build it on a branch.
 
-## The wedge (the one decision everything hangs on)
+## The wedge: the simplest money app anyone can use
 
-Don't ship a standalone *personal-finance* app — that's a head-on fight with
-Monarch, Copilot, and YNAB, and you'd be an unknown brand asking strangers to
-connect a bank. The underserved niche is the operator you already built for:
-someone running **multiple messy entities**, a wall of cards, **informal IOUs**,
-triaging cash daily. Make *that* the product.
+Public and mass-market — built so someone with **zero financial literacy** can
+use it *and* a **business owner** can. The moat isn't features, it's **radical
+simplicity**. Every incumbent — Mint, Monarch, Copilot, YNAB — is a dashboard
+built for people who already enjoy managing money. Vigilance is for the people
+who don't: it tells you, in plain English, the **one thing to do next**.
 
-- **Personal tier** = the free funnel.
-- **Operator tier** = the paid SaaS.
-- **Tradeoff:** smaller market than mass-market personal finance, but
-  defensible, higher willingness-to-pay, and the hard parts (multi-entity, IOU
-  ledger, runway) are already built.
+- **Everyone** = free, dead-simple: "what do I do about my money today?"
+- **Business owners** = the operator / multi-entity depth as a paid tier on top.
+- **Differentiator:** it tells you what to do; it doesn't hand you charts and
+  make you figure it out.
+- **Tradeoff:** mass-market means more competitors and a higher trust + support
+  bar — but simplicity is the one axis every incumbent has abandoned, so it's
+  the winnable one.
 
-Everything below assumes that wedge.
+## Non-negotiable: anyone can use it
+
+If a non-technical 40-year-old — or a stressed business owner with 30 seconds —
+can't get value from one screen, it's too complex. Concretely:
+
+- **The hint becomes the home screen.** Open the app, see the single most
+  important thing to do right now, in one sentence. The dashboard lives
+  *behind* that, not in front of it.
+- **One action at a time** — progressive disclosure. Depth exists for those who
+  want it, hidden for those who don't.
+- **Zero jargon, ever** (the Vu test) — enforce it across onboarding and empty
+  states, not just the hints.
+- **Accessible by default** — big tap targets, high contrast, large readable
+  type; works for older, low-digital-literacy, and ESL users.
+- **Frictionless sign-in** — passwordless code entry (the login fix shipping
+  now) is exactly this: nothing to remember, no browser hop.
+
+Everything below serves that: simple enough for everyone, with a paid tier for
+business owners.
 
 ---
 
