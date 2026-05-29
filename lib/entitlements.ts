@@ -34,7 +34,7 @@ export interface Entitlement {
 // Statuses that still grant access. past_due is kept entitled through Stripe's
 // dunning/grace window — losing access the instant a card fails is hostile and
 // Stripe retries before moving to canceled/unpaid.
-const ACTIVE_STATUSES = new Set(["trialing", "active", "past_due"]);
+const ACTIVE_STATUS_LIST = ["trialing", "active", "past_due"] as const;
 
 const FREE: Entitlement = {
   tier: "free",
@@ -48,17 +48,20 @@ export async function getEntitlement(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Entitlement> {
-  // 1. Newest operator subscription for this user (RLS scopes to own rows).
+  // 1. ANY active operator subscription for this user (not just the newest
+  //    row — a user with a newer canceled sub + an older active one is still
+  //    entitled). RLS scopes to own rows.
   const { data: sub } = await supabase
     .from("subscriptions")
     .select("status, current_period_end, cancel_at_period_end")
     .eq("user_id", userId)
     .eq("plan", "operator")
-    .order("created_at", { ascending: false })
+    .in("status", ACTIVE_STATUS_LIST as unknown as string[])
+    .order("current_period_end", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (sub && ACTIVE_STATUSES.has(sub.status as string)) {
+  if (sub) {
     return {
       tier: "operator",
       source: "subscription",

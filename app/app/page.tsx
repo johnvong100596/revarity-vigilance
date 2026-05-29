@@ -314,8 +314,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   ).length;
 
   const hasAccounts = accounts.length > 0;
+  // "FX rates pending" means a balance COULDN'T be converted — after
+  // normalizeAccountsToHome, a successfully-converted row carries currency ===
+  // homeCurrency, so any row still in a foreign currency is an unconverted
+  // fallback (rate missing). Keyed on the conversion outcome, not raw currency
+  // diversity, so the chip disappears once rates are populated.
   const hasMixedCurrency =
-    hasAccounts && accounts.some((a) => a.currency !== homeCurrency);
+    hasAccounts && accountsHome.some((a) => a.currency !== homeCurrency);
   const hasCreditCards = accounts.some(
     (a) =>
       a.category === "debt" &&
@@ -330,7 +335,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       (m) => `${m.account_id as string}:${m.due_date as string}`
     )
   );
-  const upcomingPayments = buildUpcomingPayments(accounts, paidMarks);
+  // Home-currency amounts so "due this week" totals match the home-currency
+  // labels (a ₲200,000 min payment must not render as "$200,000").
+  const upcomingPayments = buildUpcomingPayments(accountsHome, paidMarks);
 
   // Onboarding (WS3). Silent locale detection runs once; the welcome moment
   // fires once after the first balance lands; the getting-started checklist
@@ -580,8 +587,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <Plus className="h-3.5 w-3.5" /> Connect another bank
           </Link>
 
+          {/* Home-currency accounts so the projection's current value matches
+              the net-worth headline. NOTE: snapshots90d are still native —
+              the historical trend line is converted in a follow-up (needs
+              per-snapshot historical rates). */}
           <ProjectionChart
-            accounts={accounts}
+            accounts={accountsHome}
             snapshots={snapshots90d}
             homeCurrency={homeCurrency}
           />

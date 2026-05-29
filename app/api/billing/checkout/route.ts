@@ -54,10 +54,22 @@ export async function POST(req: NextRequest) {
       const { error: insErr } = await admin
         .from("stripe_customers")
         .insert({ user_id: user.id, stripe_customer_id: customerId });
-      // A concurrent checkout could insert first; the user_id PK rejects the
-      // loser with 23505 — that's the race resolving, not a failure.
-      if (insErr && insErr.code !== "23505") {
-        throw new Error(`customer mapping failed: ${insErr.message}`);
+      if (insErr) {
+        if (insErr.code === "23505") {
+          // A concurrent checkout inserted first. Use THEIR customer id (the
+          // one persisted), not our just-created orphan, so the persisted
+          // mapping and the billed customer stay consistent.
+          const { data: winner } = await admin
+            .from("stripe_customers")
+            .select("stripe_customer_id")
+            .eq("user_id", user.id)
+            .single();
+          if (winner?.stripe_customer_id) {
+            customerId = winner.stripe_customer_id as string;
+          }
+        } else {
+          throw new Error(`customer mapping failed: ${insErr.message}`);
+        }
       }
     }
 

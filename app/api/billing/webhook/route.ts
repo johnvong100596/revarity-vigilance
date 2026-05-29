@@ -130,11 +130,15 @@ async function syncSubscription(sub: Stripe.Subscription) {
 
   const userId = await resolveUserId(admin, f.metadataUserId, f.customerId);
   if (!userId) {
-    // Can't attribute this subscription to a user — make Stripe retry; the
-    // checkout.session.completed event usually lands the mapping first.
-    throw new Error(
-      `no user for subscription ${f.subscriptionId} (customer ${f.customerId})`
+    // Can't attribute this subscription to a user yet (the
+    // checkout.session.completed mapping hasn't landed, or a dashboard-created
+    // sub has no metadata). Skip with 2xx rather than throwing — a throw makes
+    // Stripe retry for days. checkout.session.completed re-syncs the sub once
+    // the mapping exists (see backfillCustomerMapping).
+    console.warn(
+      `[billing/webhook] no user for subscription ${f.subscriptionId} (customer ${f.customerId}) — skipping`
     );
+    return;
   }
 
   const { error: upsertErr } = await admin
@@ -156,14 +160,25 @@ async function syncSubscription(sub: Stripe.Subscription) {
     throw new Error(`subscription upsert failed: ${upsertErr.message}`);
   }
 
-  // Bridge to the existing gates: paid/active → operator on, else off.
+  // Bridge to the existing gates: paid/active → operator on, else off — EXCEPT
+  // never revoke a comped @revarity.com account. They get business features
+  // free (the handle_new_user trigger set is_operator with no subscription
+  // behind it), so a cancelled Stripe sub must not flip their comp off.
   const entitled = ACTIVE_STATUSES.has(f.status);
-  const { error: flagErr } = await admin
-    .from("profiles")
-    .update({ is_operator: entitled })
-    .eq("id", userId);
-  if (flagErr) {
-    throw new Error(`is_operator sync failed: ${flagErr.message}`);
+  let skipFlagWrite = false;
+  if (!entitled) {
+    const { data: u } = await admin.auth.admin.getUserById(userId);
+    const email = (u?.user?.email ?? "").toLowerCase();
+    if (email.endsWith("@revarity.com")) skipFlagWrite = true;
+  }
+  if (!skipFlagWrite) {
+    const { error: flagErr } = await admin
+      .from("profiles")
+      .update({ is_operator: entitled })
+      .eq("id", userId);
+    if (flagErr) {
+      throw new Error(`is_operator sync failed: ${flagErr.message}`);
+    }
   }
 
   // Mirror setOperator(): first time on, seed the immutable Personal entity so
@@ -208,5 +223,24 @@ async function backfillCustomerMapping(session: Stripe.Checkout.Session) {
     );
   if (error) {
     throw new Error(`customer mapping backfill failed: ${error.message}`);
+  }
+
+  // If subscription.created arrived before this mapping existed, syncSubscription
+  // skipped it (no resolvable user). Now that the mapping is in place, re-sync
+  // the session's subscription so it's recorded + entitlement applied.
+  const subId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id;
+  if (subId) {
+    try {
+      const sub = await stripe().subscriptions.retrieve(subId);
+      await syncSubscription(sub);
+    } catch (err) {
+      console.error(
+        "[billing/webhook] backfill re-sync failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 }

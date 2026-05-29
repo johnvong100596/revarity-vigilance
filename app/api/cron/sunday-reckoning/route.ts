@@ -177,6 +177,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ sent, skipped, failures });
 }
-
-// Vercel cron uses POST. Don't alias GET — a GET alias makes the route
-// a one-curl drive-by trigger for the entire email blast.

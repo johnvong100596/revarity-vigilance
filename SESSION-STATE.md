@@ -18,7 +18,22 @@
 
 ---
 
-## Follow-up session (Cena live, 2026-05-29) — current
+## Overnight publish session (Cena authorized go-live, 2026-05-29) — current
+- **POST-PUBLISH AUDIT round done** (4 parallel agents). No crashes; prod stable; RLS + signup-trigger confirmed safe in prod. Fixed 9 bugs (live on master), flagged the rest → AUDIT-POSTPUBLISH-2026-05-29.md.
+  - Fixed: fx_rates overflow (widened NUMERIC(18,8), applied to prod); revarity-comp clobber guard in webhook; projection + pay-this-week now use converted balances; "FX pending" chip keyed on real conversion outcome; webhook 500-retry loop → 2xx + re-sync; entitlement any-active; checkout customer race; stale cron comments removed.
+  - **TOP FLAG for Cena before charging:** the operator/business tier is currently FREE-bypassable — anyone can toggle is_operator on in Settings (setOperator + no profiles column guard). Must gate before Stripe go-live. Not fixed now (would lock out current non-revarity operator users while billing is dormant).
+  - Other flags: deferred snapshot-FX (week-over-week delta / projection history / emails still native); webhook event-ordering; fx feed atomicity. See audit doc.
+
+- **PUBLISHED to prod:** merged `feat/billing-rules-fx-rls` → master (ff) and pushed → Vercel deploy. Multi-currency FX, @revarity.com free tier, workspace RLS hardening, and 30-day trial are now in the prod codebase.
+- **Applied all 3 pending DB migrations to PROD** via `scripts/apply-migration.mjs` (the team's existing runner; transactional). Verified:
+  - subscriptions + stripe_customers tables exist (empty/dormant).
+  - @revarity.com backfill: 3/3 revarity users → is_operator=true.
+  - workspace_members UPDATE policy now has WITH CHECK (takeover chain closed).
+  - fx_rates seeded (USD/CAD/EUR/PYG) so FX conversion works immediately.
+- Cena's directive: publish even if buggy ("no one using it"), flag all bugs/faults for tomorrow. Running a heavy parallel re-audit of the newly-live code (FX, billing, RLS/revarity, regression) — findings → AUDIT doc + fixes.
+- **KNOWN-OPEN flagged already:** (1) deferred snapshot-FX (projection/week-over-week still native — needs historical rates). (2) Stripe keys not set (billing dormant by design). (3) revarity-comp clobber risk: if a comped @revarity.com user ever subscribes+cancels, the webhook would flip is_operator off — auditing.
+
+## Follow-up session (Cena live, 2026-05-29)
 - **MERGED to master (prod):** `feat/saas-billing-entitlements` fast-forwarded → master @ `231f454`'s parent line; pushed. Fixes the live cron + Ask bugs; billing rides along dormant. (Billing migration `20260529120001` is on master but NOT applied to prod DB — apply when wiring Stripe; prod is safe without it.)
 - **New branch `feat/billing-rules-fx-rls`** (off updated master) — NOT merged, pushed for review:
   - @revarity.com emails → business features free (migration `..._revarity_free_operator`: handle_new_user + backfill). Everyone else → 30-day Stripe trial (checkout `trial_period_days=30`) then paid.

@@ -159,5 +159,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ sent, skipped, failures });
 }
-
-// POST-only — see note in sunday-reckoning route about not aliasing GET.
