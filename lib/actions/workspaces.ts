@@ -262,6 +262,19 @@ export async function removeMember(input: { memberId: string }) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Never remove the workspace owner — they own the workspaces row, so evicting
+  // their membership would lock them out of their own data. RLS also blocks an
+  // admin from deleting an owner; this gives a clear error and covers the
+  // owner-removing-owner case RLS allows.
+  const { data: target } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("id", memberId)
+    .maybeSingle();
+  if (target?.role === "owner") {
+    throw new Error("The workspace owner can't be removed.");
+  }
+
   // RLS enforces owner/admin-only at DB level. Just delete.
   const { error } = await supabase
     .from("workspace_members")

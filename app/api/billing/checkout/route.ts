@@ -66,7 +66,14 @@ export async function POST(req: NextRequest) {
       customer: customerId,
       line_items: [{ price: operatorPriceId()!, quantity: 1 }],
       client_reference_id: user.id,
-      subscription_data: { metadata: { supabase_user_id: user.id } },
+      subscription_data: {
+        // 30-day free trial for everyone who checks out. (@revarity.com staff
+        // are comped and never reach checkout.) During the trial the
+        // subscription status is "trialing", which lib/entitlements.ts treats
+        // as entitled, and the webhook sets is_operator on.
+        trial_period_days: 30,
+        metadata: { supabase_user_id: user.id },
+      },
       allow_promotion_codes: true,
       success_url: `${origin}/app/settings?billing=success`,
       cancel_url: `${origin}/app/settings?billing=cancelled`,
