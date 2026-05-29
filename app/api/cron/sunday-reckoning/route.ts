@@ -33,6 +33,14 @@ export const maxDuration = 300; // 5 min — Vercel cron default
  * path, not the weekly summary). Logs per-user send result, returns
  * summary counts.
  */
+// Vercel Cron invokes the configured path with GET, so the scheduled run must
+// have a GET handler or it 405s and never executes. Delegate to POST (kept for
+// manual/curl invocation). The Bearer CRON_SECRET check below applies to both
+// verbs — this is NOT an unauthenticated alias.
+export async function GET(req: NextRequest) {
+  return POST(req);
+}
+
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {

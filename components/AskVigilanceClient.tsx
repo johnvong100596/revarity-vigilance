@@ -64,7 +64,7 @@ export function AskVigilanceClient({
     e.preventDefault();
     if (!question.trim()) return;
     if (remaining <= 0) {
-      setError("Daily limit reached. Resets at midnight UTC.");
+      setError("You've used today's questions. More open up tomorrow.");
       return;
     }
     submit(question.trim());

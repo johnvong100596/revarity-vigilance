@@ -149,11 +149,18 @@ export function calculateRunway(opts: {
   }
 
   const monthlyNet = incoming - outgoing;
-  const isSustainable = monthlyNet >= 0;
+  // A burn under 1 currency unit/month isn't a real deficit — treating it as
+  // one divides by ~0 and yields absurd runways (e.g. -0.01 → 30,000,000 days).
+  // Round it to sustainable, and cap the result as a sanity ceiling regardless.
+  const RUNWAY_CAP_DAYS = 36500; // 100 years — beyond this the figure is noise
+  const isSustainable = monthlyNet >= -1;
   const burn = isSustainable ? 0 : -monthlyNet;
   const runwayDays = isSustainable
     ? null
-    : Math.max(0, Math.floor((currentCash * windowDays) / burn));
+    : Math.min(
+        RUNWAY_CAP_DAYS,
+        Math.max(0, Math.floor((currentCash * windowDays) / burn))
+      );
   const projectedCashIn30 = currentCash + monthlyNet;
 
   return {

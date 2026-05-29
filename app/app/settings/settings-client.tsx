@@ -160,7 +160,10 @@ export function PlaidItemCard({
             <div className="truncate text-sm font-medium text-text-primary">
               {institution}
             </div>
-            <div className="mt-0.5 text-xs text-text-secondary">
+            <div
+              className="mt-0.5 text-xs text-text-secondary"
+              suppressHydrationWarning
+            >
               {syncedAt
                 ? `Last refreshed ${syncedAt.toLocaleString()}`
                 : "Not refreshed yet"}

@@ -195,9 +195,8 @@ export default async function SettingsPage() {
               ))}
             </select>
             <p className="text-[11px] leading-relaxed text-text-muted">
-              All net-worth totals and ritual screens display in this
-              currency. Multi-currency accounts get FX-converted at snapshot
-              time (Day 6 cron lands the live rate feed).
+              All your totals show in this currency. Accounts in another
+              currency are converted to it for you.
             </p>
           </div>
           <div className="space-y-2">
@@ -259,7 +258,7 @@ export default async function SettingsPage() {
         <div className="rounded-card border border-text-primary/8 bg-bg-tertiary px-4 divide-y divide-text-primary/6">
           <ToggleRow
             label="Expert hints"
-            description="Surface CFO-grade insights as you check in. Turn off to skip the hint engine entirely."
+            description="Show expert money tips as you check in. Turn off to stop seeing them."
             field="expert_hints_enabled"
             initial={profile?.expert_hints_enabled ?? true}
           />

@@ -237,7 +237,7 @@ export function ReckoningClient({
           className="w-full resize-none rounded-card border border-text-primary/12 bg-bg-tertiary p-4 text-[15px] leading-relaxed text-text-primary placeholder:text-text-muted focus:border-accent-primary/40 focus:outline-none focus:ring-2 focus:ring-accent-primary/15"
         />
         <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="text-[11px] text-text-muted">
+          <div className="text-[11px] text-text-muted" suppressHydrationWarning>
             {savedAt ? `Saved · ${savedAt.toLocaleTimeString()}` : "Not saved"}
           </div>
           <button

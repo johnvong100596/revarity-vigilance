@@ -17,10 +17,17 @@ export const maxDuration = 300;
 
 /**
  * Monthly Close email. Runs on the 1st of each month at 16:00 UTC (8am PT).
- * Requires CRON_SECRET (fail-closed). POST-only — no GET alias so the
- * route can't be triggered by a single anonymous curl. Sends to users
- * with monthly_email_enabled = true.
+ * Requires CRON_SECRET (fail-closed). Sends to users with
+ * monthly_email_enabled = true.
+ *
+ * Vercel Cron invokes with GET, so GET delegates to POST below (POST kept for
+ * manual/curl). The Bearer CRON_SECRET check guards BOTH verbs — an anonymous
+ * GET is rejected exactly like an anonymous POST, so there's no drive-by risk.
  */
+export async function GET(req: NextRequest) {
+  return POST(req);
+}
+
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {

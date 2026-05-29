@@ -117,6 +117,9 @@ export async function addAccount(formData: FormData) {
   if (error) throw new Error(`Could not create account: ${error.message}`);
 
   await runHintsEngine(user.id, { workspaceId });
+  // Revalidate so the home page reflects the new account immediately (redirect
+  // throws, so this must run first).
+  revalidatePath("/app");
   redirect("/app");
 }
 

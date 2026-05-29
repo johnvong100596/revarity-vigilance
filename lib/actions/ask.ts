@@ -145,7 +145,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     await supabase.from("ask_history").delete().eq("id", placeholder.id);
     return {
       ok: false,
-      error: `Daily limit reached (${DAILY_CAP} questions per day). Resets at midnight UTC.`,
+      error: `You've used today's ${DAILY_CAP} questions. More open up tomorrow.`,
       remainingToday: 0,
     };
   }
@@ -163,7 +163,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     supabase
       .from("accounts")
       .select(
-        "id, name, type, category, balance, currency, apr, min_payment, last_acknowledged_at"
+        "id, name, account_type, category, balance, currency, apr, min_payment, last_acknowledged_at"
       )
       .eq("workspace_id", workspaceId)
       .eq("archived", false),
@@ -188,6 +188,8 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
   const snapshots = snapshotsRes.data ?? [];
 
   if (accounts.length === 0) {
+    // Roll back the placeholder so this attempt doesn't burn a daily slot.
+    await supabase.from("ask_history").delete().eq("id", placeholder.id);
     return {
       ok: false,
       error: "Connect a bank or add an account first — there's nothing to reflect on yet.",
@@ -230,7 +232,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     ninetyDayNetWorthChange: ninetyDayChange,
     accounts: accounts.map((a) => ({
       name: a.name as string,
-      type: a.type as string,
+      type: a.account_type as string,
       category: a.category as string,
       balance: Number(a.balance),
       currency: a.currency as string,
@@ -256,7 +258,7 @@ export async function askVigilance(input: { question: string }): Promise<AskResu
     await supabase.from("ask_history").delete().eq("id", placeholder.id);
     return {
       ok: false,
-      error: "Couldn't reach the model. Try again in a moment.",
+      error: "Couldn't get an answer right now. Try again in a moment.",
     };
   }
 

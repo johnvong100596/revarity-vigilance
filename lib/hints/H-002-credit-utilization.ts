@@ -53,7 +53,9 @@ export const H002: HintEvaluator = {
       );
       if (daysToClose > DAYS_WINDOW) continue;
 
-      const payoffNeeded = balance - limit * TARGET_UTILIZATION;
+      // Floor at 0 — if the limit was raised since balance capture the raw
+      // figure could go negative and render as "Pay -$X".
+      const payoffNeeded = Math.max(0, balance - limit * TARGET_UTILIZATION);
       const currency = card.currency as Currency;
 
       return {

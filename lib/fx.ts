@@ -22,7 +22,9 @@ export async function convert(
   if (from === to) return toDecimal(amount);
 
   const direct = await resolveRate(from, to);
-  if (direct) return toDecimal(amount).times(direct);
+  // Guard against a stale/bad feed returning 0, which would silently zero the
+  // amount (mirrors the inverse-path guard below).
+  if (direct && !direct.isZero()) return toDecimal(amount).times(direct);
 
   const inverse = await resolveRate(to, from);
   if (inverse && !inverse.isZero()) {

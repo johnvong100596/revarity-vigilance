@@ -21,8 +21,18 @@
 ## Progress log
 - [done] Baseline tsc/lint/build all green on master @ 9fefca6.
 - [done] #2 Stripe billing + entitlements scaffolding (code only, no Stripe calls/keys/money).
-- [done] Full six-track audit complete; findings below + in AUDIT-AUTONOMOUS-2026-05-29.md.
-- [in progress] Applying safe, high-confidence bug fixes from the audit, re-verifying after each batch.
+- [done] Full six-track audit complete; full findings in AUDIT-AUTONOMOUS-2026-05-29.md.
+- [done] Applied safe, high-confidence bug fixes from the audit. tsc + lint + full build all GREEN after fixes (verified end-to-end).
+
+### Audit fixes applied this run (commit pending)
+- **CRITICAL** cron never fired: `sunday-reckoning` + `monthly-close` now export GET (delegates to POST) so Vercel Cron actually runs them; CRON_SECRET check preserved on both verbs.
+- **CRITICAL** "Ask Vigilance" broken for everyone: fixed `type`→`account_type` column; roll back the quota placeholder on the no-accounts path.
+- runway divide-by-near-zero → absurd days: sub-1-unit burn treated sustainable + 100yr cap.
+- H-002 credit payoff figure floored at 0 (was renderable negative).
+- fx.ts: guard direct-rate isZero (was silently zeroing balances).
+- addAccount: revalidatePath("/app") so a new account shows immediately.
+- Hydration: suppressHydrationWarning on the two client time-format nodes (settings last-sync, reckoning saved-at).
+- Vu-test copy (safe dev-jargon leaks only): "the model", "midnight UTC", "Day 6 cron lands the live rate feed", "skip the hint engine entirely" → plain English.
 
 ## Done
 ### #2 Billing + entitlements scaffolding (commit pending)
@@ -35,7 +45,15 @@
 - **Did NOT:** call any Stripe API, set any keys, create any products, or spend money. Pure code.
 
 ## NEEDS CENA (decisions only Cena can make — not guessing)
-- **Pricing for the operator tier** (#2): monthly/annual price, trial length, and the exact free-vs-paid feature boundary. I will scaffold billing with env-var price IDs and a documented proposed boundary; final numbers are yours.
+- **Pricing for the operator tier** (#2): monthly/annual price, trial length, exact free-vs-paid boundary. Scaffolding uses env-var price IDs; final numbers are yours. To go live: create the product/price in Stripe, set `STRIPE_SECRET_KEY`, `STRIPE_OPERATOR_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, and point a Stripe webhook at `/api/billing/webhook`. Until then billing is dormant (no UI, routes 503).
+- **Audit — high-impact items I would NOT fix unsupervised** (full detail in AUDIT-AUTONOMOUS-2026-05-29.md):
+  - Multi-currency net worth/runway summed without FX (intentionally deferred to "Day 6"). Biggest correctness risk. Ship FX or gate runway/portfolio hints to single-currency until then.
+  - Plaid sync never reconciles accounts (closed accts keep stale balances; new accts never appear) + webhook not idempotent (duplicate snapshots) + webhook returns 200 on error (no retry).
+  - Workspace takeover chain: admin can self-promote to owner + evict owner (RLS WITH CHECK gap). Recommended SQL in the audit doc — review + test before applying; I did NOT write a migration.
+  - `account_type` maps Plaid `credit`→`loan` (cards look like loans) — needs enum migration.
+  - H-304 subscription-burn hint written but unregistered; `bank_products` table + H-102 unbuilt; dead `capital_waterfall`/`role_context` columns.
+  - Core nav Vu-test renames (Reckoning, Monthly Close, unexplained "Net worth", marketing-page jargon) — brand decision, not auto-fixed.
+  - Optimistic check-in advances the queue even when the server action throws (silent data loss) — interaction-flow change.
 
 ## Open questions / notes
 - The /remote-control scoped-task slot arrived blank (literal template placeholder). Proceeding on the clearly-scoped independent work from the prior briefing (#1/#2 + audit), since the feat/today-home-screen merge is gated on Cena's verdict and branch-only forbids the merge regardless.
