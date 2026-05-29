@@ -31,6 +31,8 @@ import { getCachedLogosMap, type InstitutionLogo } from "@/lib/institution-logos
 import type { RawSnapshot } from "@/lib/rituals";
 import { DEFAULT_TIMEZONE, addDaysISO, localDateISO } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
+import { convert } from "@/lib/fx";
+import { makeRateResolver } from "@/lib/fx-resolver";
 import {
   formatBalance,
   toDecimal,
@@ -234,12 +236,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const topHint = hints[0] ?? null;
   const activeHintCount = hints.length;
 
-  // Net worth: assets minus debts. Multi-currency FX conversion lands Day 6.
-  // Operator-tier IOUs add to the picture: money owed to you is an asset,
-  // money you owe is a debt. Non-operators contribute zero on both sides.
+  // Net worth: assets minus debts, every balance converted to the home
+  // currency. The resolver reads the USD-base fx_rates feed (fx-refresh cron)
+  // and triangulates any pair. If a rate is missing (feed not populated yet)
+  // convert() throws and we fall back to the raw balance — i.e. same-currency
+  // users are unaffected, and multi-currency users get conversion once rates
+  // exist. Operator-tier IOUs add to the picture: money owed to you is an
+  // asset, money you owe is a debt. Non-operators contribute zero on both.
+  const resolveRate = await makeRateResolver(supabase);
+  const balanceHomeById = new Map<string, ReturnType<typeof toDecimal>>();
+  for (const a of accounts) {
+    try {
+      balanceHomeById.set(
+        a.id,
+        await convert(
+          a.balance,
+          (a.currency as Currency) ?? homeCurrency,
+          homeCurrency,
+          resolveRate
+        )
+      );
+    } catch {
+      balanceHomeById.set(a.id, toDecimal(a.balance));
+    }
+  }
   const netWorth = accounts
     .reduce((sum, a) => {
-      const signed = toDecimal(a.balance).times(a.category === "asset" ? 1 : -1);
+      const home = balanceHomeById.get(a.id) ?? toDecimal(a.balance);
+      const signed = home.times(a.category === "asset" ? 1 : -1);
       return sum.plus(signed);
     }, toDecimal(0))
     .plus(toDecimal(iousOwedToMe))

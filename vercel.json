@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/monthly-close",
       "schedule": "0 16 1 * *"
+    },
+    {
+      "path": "/api/cron/fx-refresh",
+      "schedule": "0 5 * * *"
     }
   ]
 }
