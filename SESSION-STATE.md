@@ -23,6 +23,8 @@
 - [done] #2 Stripe billing + entitlements scaffolding (code only, no Stripe calls/keys/money).
 - [done] Full six-track audit complete; full findings in AUDIT-AUTONOMOUS-2026-05-29.md.
 - [done] Applied safe, high-confidence bug fixes from the audit. tsc + lint + full build all GREEN after fixes (verified end-to-end).
+- [done] #1 positioning operationalized → POSITIONING-AND-PRICING-2026-05-29.md (free-vs-paid boundary, pricing recommendation, Vu-test naming direction).
+- **RUN COMPLETE.** All work is on branch `feat/saas-billing-entitlements` (off master). Nothing merged, nothing pushed, no prod/DB/Stripe changes. 3 commits. tsc + lint + build green. Awaiting Cena.
 
 ### Audit fixes applied this run (commit pending)
 - **CRITICAL** cron never fired: `sunday-reckoning` + `monthly-close` now export GET (delegates to POST) so Vercel Cron actually runs them; CRON_SECRET check preserved on both verbs.
