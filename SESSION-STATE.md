@@ -18,6 +18,14 @@
 
 ---
 
+## Follow-up session (Cena live, 2026-05-29) — current
+- **MERGED to master (prod):** `feat/saas-billing-entitlements` fast-forwarded → master @ `231f454`'s parent line; pushed. Fixes the live cron + Ask bugs; billing rides along dormant. (Billing migration `20260529120001` is on master but NOT applied to prod DB — apply when wiring Stripe; prod is safe without it.)
+- **New branch `feat/billing-rules-fx-rls`** (off updated master) — NOT merged, pushed for review:
+  - @revarity.com emails → business features free (migration `..._revarity_free_operator`: handle_new_user + backfill). Everyone else → 30-day Stripe trial (checkout `trial_period_days=30`) then paid.
+  - Workspace RLS hardening (migration `..._workspace_rls_hardening`) — closes the admin→owner takeover chain. **TEST in a Supabase branch before applying.**
+  - Multi-currency FX: rate-feed cron + resolver + net-worth conversion. Safe (no behavior change until the feed populates). **Needs Cena's runtime review** of displayed numbers before merge; runway/projection/hints still mix currencies (queued).
+- Decisions taken from Cena: price $15/mo or $120/yr · 30-day trial · no Stripe keys yet · FX via free provider (Google has no API) · RLS go · Vu renames later · E done.
+
 ## Progress log
 - [done] Baseline tsc/lint/build all green on master @ 9fefca6.
 - [done] #2 Stripe billing + entitlements scaffolding (code only, no Stripe calls/keys/money).
