@@ -378,6 +378,47 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Reconnect banner — only renders when there are broken Plaid items */}
       <PlaidReconnectBanner banks={brokenBanks} />
 
+      {/* Today — the single thing that matters, promoted to the front door.
+          The dashboard (net worth, accounts) sits below it. */}
+      {hasAccounts && topHint && TopHintIcon && (
+        <Link
+          href="/app/hints"
+          className={`mb-8 block rounded-hero border border-text-primary/8 border-l-[4px] ${HINT_ACCENT[topHint.category]} bg-bg-tertiary p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)]`}
+        >
+          <div className="mb-2 flex items-center gap-1.5">
+            <TopHintIcon
+              className={`h-4 w-4 ${HINT_LABEL_COLOR[topHint.category]}`}
+            />
+            <span
+              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${HINT_LABEL_COLOR[topHint.category]}`}
+            >
+              {HINT_LABEL_TEXT[topHint.category]}
+            </span>
+          </div>
+          <div className="text-[19px] font-semibold leading-snug text-text-primary">
+            {topHint.composed_body ?? topHint.body}
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-sm font-medium text-accent-primary">
+            {activeHintCount > 1
+              ? `See this + ${activeHintCount - 1} more`
+              : "See details"}
+            <ChevronRight className="h-4 w-4" />
+          </div>
+        </Link>
+      )}
+
+      {/* All clear — when nothing needs attention, say so plainly */}
+      {hasAccounts && !topHint && (
+        <div className="mb-8 rounded-hero border border-text-primary/8 bg-bg-tertiary p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-positive">
+            All clear
+          </div>
+          <div className="text-[19px] font-semibold leading-snug text-text-primary">
+            Nothing needs your attention today. Nice.
+          </div>
+        </div>
+      )}
+
       {/* Net worth */}
       <section className="mb-8">
         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
@@ -493,31 +534,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
-
-          {/* Top hint preview */}
-          {topHint && TopHintIcon && (
-            <Link
-              href="/app/hints"
-              className={`mb-6 block rounded-card border border-text-primary/8 border-l-[3px] ${HINT_ACCENT[topHint.category]} bg-bg-tertiary p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition hover:shadow-[0_2px_10px_rgba(0,0,0,0.06)]`}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <TopHintIcon
-                    className={`h-3.5 w-3.5 ${HINT_LABEL_COLOR[topHint.category]}`}
-                  />
-                  <span
-                    className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${HINT_LABEL_COLOR[topHint.category]}`}
-                  >
-                    {HINT_LABEL_TEXT[topHint.category]}
-                  </span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-text-muted" />
-              </div>
-              <div className="text-sm leading-relaxed text-text-primary">
-                {topHint.composed_body ?? topHint.body}
-              </div>
-            </Link>
-          )}
 
           {/* Accounts list */}
           <ul className="mb-5 overflow-hidden rounded-card border border-text-primary/8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
