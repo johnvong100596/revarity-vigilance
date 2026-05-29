@@ -14,7 +14,7 @@ export const H001: HintEvaluator = {
   id: "H-001",
   templateId: "H-001-debt-priority",
   severity: "pay_attention",
-  title: "Debt prioritization",
+  title: "Your most expensive debt",
   eval(ctx) {
     // Only consider debts with a VERIFIED APR (M6) — firing on garbage
     // data like a 999% typo would undermine the hint's credibility.
@@ -34,7 +34,7 @@ export const H001: HintEvaluator = {
     return {
       fires: true,
       relatedAccountId: worst.id,
-      body: `Your ${worst.name} charges ${apr.toFixed(2)}% a year on a ${balanceStr} balance — your most expensive debt. Paying it down beats the ~${ASSUMED_AVG_INVESTMENT_RETURN}% you'd expect from the market, risk-free. Tackle this before adding to investments.`,
+      body: `Your ${worst.name} charges ${apr.toFixed(2)}% a year on a ${balanceStr} balance — your priciest debt. Paying it down is a guaranteed win: better than the ~${ASSUMED_AVG_INVESTMENT_RETURN}% a year you might make investing, with none of the risk. Clear this before putting more into investments.`,
       data: {
         apr,
         threshold: APR_THRESHOLD,

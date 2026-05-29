@@ -22,7 +22,7 @@ export const H201: HintEvaluator = {
   id: "H-201",
   templateId: "H-201-portfolio-weighting",
   severity: "strategic",
-  title: "Portfolio weighting",
+  title: "Cash vs. investments",
   eval(ctx) {
     const assets = ctx.accounts.filter((a) => a.category === "asset");
     if (assets.length < 2) return { fires: false };
@@ -47,9 +47,9 @@ export const H201: HintEvaluator = {
       return {
         fires: true,
         relatedAccountId: null,
-        body: `Risk assets (investments + crypto) are ${riskPct.toFixed(0)}% of your portfolio. The classic 60/40 stock/bond benchmark holds ${TARGET_RISK_PCT}%. You're concentrated — a single drawdown wipes more than you may want. Consider raising the cash/bond side.`,
+        body: `About ${riskPct.toFixed(0)}% of the money you've saved and invested is in investments and crypto — and those can swing up and down a lot. Many people keep that closer to ${TARGET_RISK_PCT}% and hold the rest in cash. With this much in one place, a rough patch in the market could sting. You might move some into cash to steady things.`,
         data: { riskPct, cashPct, target: TARGET_RISK_PCT, bound: "upper" },
-        actionLabel: "Review allocation",
+        actionLabel: "See your accounts",
         actionTarget: "/app",
       };
     }
@@ -57,9 +57,9 @@ export const H201: HintEvaluator = {
       return {
         fires: true,
         relatedAccountId: null,
-        body: `Cash position is ${cashPct.toFixed(0)}% of your portfolio. The classic 60/40 benchmark holds 40% cash; you're over-reserving. That's drag on long-run returns. Consider deploying to risk assets.`,
+        body: `About ${cashPct.toFixed(0)}% of the money you've saved and invested is sitting in cash. Cash is safe, but it tends to grow slowly. Many people keep closer to ${100 - TARGET_RISK_PCT}% in cash and invest the rest. Putting some to work could help it grow faster over time.`,
         data: { riskPct, cashPct, target: TARGET_RISK_PCT, bound: "lower" },
-        actionLabel: "Review allocation",
+        actionLabel: "See your accounts",
         actionTarget: "/app",
       };
     }

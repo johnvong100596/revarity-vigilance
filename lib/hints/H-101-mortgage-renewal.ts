@@ -16,7 +16,7 @@ export const H101: HintEvaluator = {
   id: "H-101",
   templateId: "H-101-mortgage-renewal",
   severity: "opportunity",
-  title: "Mortgage renewal window",
+  title: "Mortgage renewal coming up",
   eval(ctx) {
     const today = new Date();
     const windowEnd = new Date(today);

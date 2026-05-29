@@ -30,7 +30,7 @@ export const H307: HintEvaluator = {
     return {
       fires: true,
       relatedAccountId: null,
-      body: `Your cash runway is ${summary.runwayDays} day${summary.runwayDays === 1 ? "" : "s"} at this pace. Cut a recurring expense, speed up an inbound payment, or tap a line of credit before it gets tight.`,
+      body: `Your cash runway is ${summary.runwayDays} day${summary.runwayDays === 1 ? "" : "s"} at this pace. To stretch it: cut a recurring bill, collect money someone owes you, or borrow from a line of credit before things get tight.`,
       data: { runwayDays: summary.runwayDays },
       actionLabel: "See breakdown",
       actionTarget: "/app",

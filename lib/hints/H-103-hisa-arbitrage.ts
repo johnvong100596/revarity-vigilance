@@ -20,7 +20,7 @@ export const H103: HintEvaluator = {
   id: "H-103",
   templateId: "H-103-hisa-arbitrage",
   severity: "opportunity",
-  title: "HISA arbitrage",
+  title: "Your cash could earn more",
   eval(ctx) {
     const cashLike = ctx.accounts.filter(
       (a) =>
@@ -40,7 +40,7 @@ export const H103: HintEvaluator = {
     return {
       fires: true,
       relatedAccountId: biggest.id,
-      body: `${formatBalance(balance, currency)} sitting in ${biggest.name}. Moving to a HISA at ~${BENCHMARK_HISA_PCT}% earns roughly ${formatBalance(annualGain, currency)}/yr extra vs a chequing rate. 5-minute transfer.`,
+      body: `${formatBalance(balance, currency)} is sitting in ${biggest.name}. Moving it to a high-interest savings account paying about ${BENCHMARK_HISA_PCT}% could earn roughly ${formatBalance(annualGain, currency)} more a year than a regular chequing account. Takes about 5 minutes.`,
       data: {
         balance,
         benchmark: BENCHMARK_HISA_PCT,
@@ -48,7 +48,7 @@ export const H103: HintEvaluator = {
         annualGain,
         currency: biggest.currency,
       },
-      actionLabel: "Compare HISAs",
+      actionLabel: "Compare savings accounts",
       actionTarget: null,
     };
   },

@@ -29,7 +29,7 @@ export const H002: HintEvaluator = {
   id: "H-002",
   templateId: "H-002-credit-utilization",
   severity: "pay_attention",
-  title: "Credit utilization danger",
+  title: "Card nearly maxed out",
   eval(ctx) {
     const today = new Date();
     const cards = ctx.accounts.filter(
@@ -68,7 +68,7 @@ export const H002: HintEvaluator = {
           payoffNeeded,
           currency: card.currency,
         },
-        actionLabel: "Open bank portal",
+        actionLabel: "Open your bank",
         actionTarget: card.quick_login_url ?? null,
       };
     }
